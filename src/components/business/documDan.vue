@@ -1,19 +1,19 @@
 
 
 <template>
-    <div class="queryBox">
+    <div class="queryBox" v-loading.fullscreen.lock="fullscreenLoading">
       <div class="querTit">
             异常运单数据
       </div>
       <div class="querTop">
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='应发未发'?'querItem1':''" @click="tabFn('应发未发')">
             <img src="@/assets/img/zu1.png" class="img1" alt="">
             <div class="querRig">
                 <p>应发未发</p>
-                <h2>26</h2>
+                <h2>{{ycydData['应发未发']}}</h2>
             </div>
         </div>
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='分批配载'?'querItem1':''" @click="tabFn('分批配载')">
             <img src="@/assets/img/zu2.png" class="img2" alt="">
             <div class="querRig">
                 <div class="querP">
@@ -27,35 +27,35 @@
                     </el-tooltip>
                     <p>分批配载</p>
                 </div>
-                <h2>12</h2>
+                <h2>{{ycydData['分批配载']}}</h2>
             </div>
         </div>
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='分拨滞留'?'querItem1':''" @click="tabFn('分拨滞留')">
             <img src="@/assets/img/zu3.png" class="img3" alt="">
             <div class="querRig">
                 <p>分拨滞留</p>
-                <h2>8</h2>
+                <h2>{{ycydData['分拨滞留']}}</h2>
             </div>
         </div>
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='超时未到'?'querItem1':''" @click="tabFn('超时未到')">
             <img src="@/assets/img/zu4.png" class="img4" alt="">
             <div class="querRig">
                 <p>超时未到</p>
-                <h2>32</h2>
+                <h2>{{ycydData['超时未到']}}</h2>
             </div>
         </div>
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='超时未送'?'querItem1':''" @click="tabFn('超时未送')">
             <img src="@/assets/img/zu5.png" class="img5" alt="">
             <div class="querRig">
                 <p>超时未送</p>
-                <h2>3</h2>
+                <h2>{{ycydData['超时未送']}}</h2>
             </div>
         </div>
-        <div class="querItem">
+        <div class="querItem" :class="logisticsStatus=='异常签收'?'querItem1':''" @click="tabFn('异常签收')">
             <img src="@/assets/img/zu6.png" class="img6" alt="">
             <div class="querRig">
                 <p>异常签收</p>
-                <h2>0</h2>
+                <h2>{{ycydData['异常签收']}}</h2>
             </div>
         </div>
       </div>
@@ -64,19 +64,19 @@
             实时运单数据
         </div>
         <div class="documPot">
-            <div class="documPotItem" :class="{'documPotItemActive': documFlag==0}" @click="documFlag = 0">
+            <div class="documPotItem" :class="{'documPotItemActive': ydStatus==''}" @click="ydFn('')">
                 全部
             </div>
-            <div class="documPotItem" :class="{'documPotItemActive': documFlag==1}" @click="documFlag = 1">
+            <div class="documPotItem" :class="{'documPotItemActive': ydStatus=='正常转运中'}" @click="ydFn('正常转运中')">
                 正常转运中
             </div>
-            <div class="documPotItem" :class="{'documPotItemActive': documFlag==2}" @click="documFlag = 2">
+            <div class="documPotItem" :class="{'documPotItemActive': ydStatus=='正常签收'}" @click="ydFn('正常签收')">
                 正常签收
             </div>
-            <div class="documPotItem" :class="{'documPotItemActive': documFlag==3}" @click="documFlag = 3">
+            <div class="documPotItem" :class="{'documPotItemActive': ydStatus=='异常单'}" @click="ydFn('异常单')">
                 异常单
             </div>
-            <div class="documPotItem" :class="{'documPotItemActive': documFlag==4}" @click="documFlag = 4">
+            <div class="documPotItem" :class="{'documPotItemActive': ydStatus=='特别关注'}" @click="ydFn('特别关注')">
                 特别关注
             </div>
         </div>
@@ -85,7 +85,7 @@
           <div class="sxTj">
               <div class="sxLeft">
                 <el-input
-                    v-model="text1"
+                    v-model="forms.waybillNumber"
                     style="width: 260px;height: 72px;"
                     :rows="3"
                     type="textarea"
@@ -95,148 +95,172 @@
                 />
               </div>
               <div class="sxRight">
-                <el-form :model="forms" label-width="auto" style="max-width: 100%;padding: 0 20px;">
+                <el-form ref="ruleFormRef" :model="forms" label-width="auto" style="max-width: 100%;padding: 0 20px;">
                     <el-row style="margin-bottom: 8px;">
-                        <el-col :span="8">
-                            <el-form-item label="最晚签收时间：">
+                        <el-col :span="16">
+                            <el-form-item label="最晚签收时间：" prop="latestSignTimes">
                                 <el-date-picker
-                                v-model="forms.date1"
-                                type="date"
-                                placeholder="请选择"
-                                style="width: 100%"
-                                />
+                                    value-format="YYYY-MM-DD HH:mm:ss"
+                                    v-model="forms.latestSignTimes"
+                                    type="datetimerange"
+                                    range-separator="至"
+                                    start-placeholder="开始日期"
+                                    end-placeholder="结束日期">
+                                </el-date-picker>
                             </el-form-item>
                         </el-col>
                         <el-col :span="8">
-                            <el-form-item label="寄件网点：">
-                                <el-select v-model="forms.region" placeholder="请选择">
-                                    <el-option label="Zone one" value="shanghai" />
-                                    <el-option label="Zone two" value="beijing" />
+                            <el-form-item label="寄件网点：" prop="sendingSite">
+                                <el-select v-model="forms.sendingSite" placeholder="请选择" clearable>
+                                    <el-option :label="item.name" :value="item.name" v-for="(item,index) in expreList.onlineExpreList" :key="index"/>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :style="{'marginBottom': zkFlag?'8px':''}">
+                        <el-col :span="8">
+                            <el-form-item label="寄件人：" prop="senderName">
+                                
+                                <el-select
+                                    v-model="forms.senderName"
+                                    filterable
+                                    placeholder="请选择"
+                                    clearable
+                                >
+                                    <el-option
+                                    v-for="(item,index) in jproList"
+                                    :key="index"
+                                    :label="item"
+                                    :value="item"
+                                    />
                                 </el-select>
                             </el-form-item>
                         </el-col>
                         <el-col :span="8">
-                            <el-form-item label="寄件人：">
-                                <el-select v-model="forms.region" placeholder="请选择">
-                                    <el-option label="Zone one" value="shanghai" />
-                                    <el-option label="Zone two" value="beijing" />
-                                </el-select> 
-                            </el-form-item>
-                        </el-col>
-                    </el-row>
-                    <el-row>
-                        <el-col :span="8">
-                            <el-form-item label="收件人：">
-                                <el-select v-model="forms.region" placeholder="请选择">
-                                    <el-option label="Zone one" value="shanghai" />
-                                    <el-option label="Zone two" value="beijing" />
+                            <el-form-item label="收件人：" prop="recipientName">
+                                <el-select
+                                    v-model="forms.recipientName"
+                                    filterable
+                                    placeholder="请选择"
+                                    clearable
+                                >
+                                    <el-option
+                                    v-for="(item,index) in sproList"
+                                    :key="index"
+                                    :label="item"
+                                    :value="item"
+                                    />
                                 </el-select>
                             </el-form-item>
                         </el-col>
                         <el-col :span="8">
                             <el-form-item label="物品名称：">
-                                <el-input v-model="forms.name" />
+                                <el-input clearable/>
                             </el-form-item>
                         </el-col>
+                    </el-row>
+                    <el-row v-if="zkFlag">
                         <el-col :span="8">
                             <el-form-item label="备注：">
-                                <el-input v-model="forms.name" />
+                                <el-input clearable/>
                             </el-form-item>
                         </el-col>
                     </el-row>
                 </el-form>
               </div>
           </div>
+          <div class="sxZK" @click="zkFlag=!zkFlag">
+            <img src="@/assets/img/zkIcon.png" alt="">
+            {{zkFlag?'收起':'展开'}}筛选
+          </div>
           <div class="sxBtns">
-              <div class="sxBtn sxBtn1">查询</div>
-              <div class="sxBtn">重置</div>
-              <div class="sxBtn">导出</div>
+              <div class="sxBtn sxBtn1" @click="cxFn">查询</div>
+              <div class="sxBtn" @click="czBtn(ruleFormRef)">重置</div>
+              <div class="sxBtn" @click="expoBtn">导出</div>
           </div>
       </div>
       <el-table
           :data="tableData"
-          v-if="tableData.length"
-          style="width: 100%;height: calc(100% - 178px);"
+          :style="{'width': '100%','height': zkFlag?'calc(100% - 424px)':'calc(100% - 385px)'}"
           ref="multipleTableRef"
       >
           <!-- <el-table-column type="selection" :selectable="selectable" width="55" /> -->
+          <template #empty>
+            <el-empty description="暂无信息"></el-empty>
+          </template>
           <el-table-column label="运单号" width="230" >
               <template #default="{row}">
                   <div class="adrBox">
-                        <el-checkbox :indeterminate="row.fjIndeterFlag" v-model="row.fjCheckFlag" @click.stop="" @change="headFlxChange(row,$event)"/>
-                        <span>{{ row.adress }}</span>
-                        <img src="@/assets/img/scang1.png" alt="">
+                        <el-checkbox :indeterminate="row.fjIndeterFlag" v-model="row.checkFlag" @click.stop="" @change="headFlxChange(row,$event)"/>
+                        <span>{{ row.waybillNumber }}</span>
+                        <img src="@/assets/img/scang1.png" v-if="row.specialAttention-0" @click="gzBtns(0,row.waybillNumber)" alt="">
                   </div>
               </template>
           </el-table-column>
           <el-table-column prop="status" label="物流动态">
               <template #default="scope">
                   <div class="tableStatus">
-                      <!-- <el-tooltip
-                          class="box-item"
-                          effect="dark"
-                          content="盲区 (大雪导致路面冰冻，高速封路，末端积压。) "
-                          placement="right"
-                      >
-                          <div class="tableBtn tableBtn1">
-                              盲区
-                          </div>
-                      </el-tooltip> -->
-                      <div class="tableBtn tableBtn2">
-                          正常
-                      </div>
-                      <!-- <div class="tableBtn tableBtn3">
-                          加收
-                      </div>
-                      <div class="tableBtn tableBtn4">
-                          自提
-                      </div> -->
-                      <div class="tableConts">
-                        <p>最新动态：2024-12-31 16:30:04 【曲靖沾益网点】 已进行【问题】扫描，原因是【客户要求暂放】</p>
+                        <div class="tableStatusLef">
+                            <div class="tableBtn tableBtn2" v-if="scope.row.logisticsStatus=='正常转运'">
+                                正常
+                            </div>
+                            <div class="tableBtn tableBtn3" v-else-if="scope.row.logisticsStatus=='无效订单'||scope.row.logisticsStatus=='派送延误'||scope.row.logisticsStatus=='超时未到'||scope.row.logisticsStatus=='分拨滞留'||scope.row.logisticsStatus=='分批配载'||scope.row.logisticsStatus=='开单未发'">
+                                {{scope.row.logisticsStatus}}
+                            </div>
+                            <div class="tableBtn tableBtn4" v-else-if="scope.row.logisticsStatus=='已签收'">
+                                {{scope.row.logisticsStatus}}
+                            </div>
+                            <template v-else>
+                                <div class="tableBtn tableBtn1" v-if="scope.row.logisticsStatus">
+                                    {{ scope.row.logisticsStatus }}
+                                </div>
+                            </template>
+                        </div>
+                      <div class="tableConts" v-if="scope.row.logisticsInfo">
+                        <p>最新动态：{{JSON.parse(scope.row.logisticsInfo)[0].scanTime }} {{JSON.parse(scope.row.logisticsInfo)[0].waybillTrace}}</p>
                         <div class="tabBtns">
-                            <div class="tabBtn tabBtn1" @click="wlBtn">
+                            <div class="tabBtn tabBtn1" @click="wlBtn(scope.row)">
                                 详情
                             </div>
-                            <div class="tabBtn">
+                            <div class="tabBtn" @click.stop="go1Copy(scope.row)">
                                 复制最新动态
                             </div>
                         </div>
                       </div>
-                      <!-- <el-tooltip
-                          class="box-item"
-                          effect="dark"
-                          content="人工客服确认中，等待片刻刷新查看结果"
-                          placement="right"
-                      >
-                          <div class="tableRgBtn" @click.stop="">
-                              <img src="@/assets/img/rgIcon.png" alt="">
-                              <p>人工客服确认中</p>
-                              <span>刷新</span>
-                          </div>
-                      </el-tooltip> -->
                   </div>
               </template>
           </el-table-column>
           <el-table-column prop="amount1" label="寄件网点" width="260">
               <template #default="scope">
                   <div class="tabelWls">
-                      <img src="@/assets/img/a@2x.png" alt="">
-                      <span>江西赣州商贸城公司</span>
+                      <img :src="imgTypeFn(scope.row.logisticsType)" alt="">
+                      <span>{{scope.row.sendingSite}}</span>
                   </div>
               </template>
           </el-table-column>
-          <el-table-column prop="amount2" label="最晚签收时间"  width="260"/>
-          <el-table-column prop="amount3" label="送货方式"  width="120"/>
-          <el-table-column prop="amount4" label="问题件"  width="120">
+          <el-table-column prop="latestSignTimeStr" label="最晚签收时间"  width="260"/>
+          <el-table-column prop="deliveryMethod" label="送货方式"  width="120"/>
+          <el-table-column prop="hasIssue" label="问题件"  width="120">
             <template #default="scope">
-                <div class="documBox">
-                    {{ scope.row.amount4 }}
+                <el-tooltip
+                    v-if="scope.row.hasIssue"
+                    class="box-item"
+                    effect="dark"
+                    :content="scope.row.issueInfo"
+                    placement="right"
+                >
+                    <div class="documBox">
+                        有
+                    </div>
+                </el-tooltip>
+                <div class="documBox1" v-else>
+                    无
                 </div>
             </template>
           </el-table-column>
-          <el-table-column prop="amount5" label="寄件人"  width="120"/>
+          <el-table-column prop="senderName" label="寄件人"  width="120"/>
       </el-table>
-      <div class="sxFot">
+      <div class="sxFot" v-if="tableData.length">
         <div class="sxFotLeft">
             <div class="xzbQx">
                 <el-checkbox v-model="qxChecks.qxCheckVal" :indeterminate="qxChecks.qxCheckIntVal" @change="qxBtnFn"/>
@@ -246,83 +270,390 @@
                 <img src="@/assets/img/infoIcon.png" alt="">
             </div>
             <div class="xzbLeft">
-                <p>已选 0 项</p>
-                <div class="xzbBtn xzbBtn1">
+                <p>已选 {{checkList.length}} 项</p>
+                <div class="xzbBtn xzbBtn1" v-if="ydStatus != '特别关注'" @click="gzBtns(1)">
                     <img src="@/assets/img/scang.png" alt="">
                     特别关注
                 </div>
-                <div class="xzbBtn xzbBtn2">
+                <div class="xzbBtn xzbBtn2" v-if="ydStatus == '特别关注'" @click="gzBtns(0)">
                     <img src="@/assets/img/scang2.png" alt="">
                     取消关注
                 </div>
                 <div class="xzbBtn">
                     物流加速
                 </div>
-                <div class="xzbBtn">
+                <div class="xzbBtn" @click="yqsBtn">
                     标记为已签收
                 </div>
-                <div class="xzbBtn">
+                <div class="xzbBtn" @click="delBtn">
                     删除
                 </div>
             </div>
         </div>
           <el-pagination
-              v-model:current-page="currentPage3"
-              v-model:page-size="pageSize3"
+              v-model:current-page="sendData.page"
+              v-model:page-size="sendData.pageSize"
               :size="size"
               :disabled="disabled"
               :background="background"
-              layout="prev, pager, next, jumper"
-              :total="1000"
+              layout="prev, pager, next, jumper, sizes"
+              :total="tatals"
               @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
           />
       </div>
-      <popLogistics ref="popis"></popLogistics>
+      <popLogistics v-if="popFlag" ref="popis" :wldtInData="wldtInData" @gbBtns="gbBtns"></popLogistics>
     </div>
   </template>
   
   <script setup lang='ts'>
-      import { ref,reactive } from 'vue';
-      import a from '@/assets/img/a@2x.png';
-      import b from '@/assets/img/b@2x.png';
-      import c from '@/assets/img/c@2x.png';
-      import d from '@/assets/img/d@2x.png';
-      import e from '@/assets/img/e@2x.png';
-      import f from '@/assets/img/f@2x.png';
-      import g from '@/assets/img/g@2x.png';
+      import { ref, watch } from 'vue';
       import popLogistics from '@/components/general/popLogistics.vue';
-      const formInline = ref({
-          user: '',
-          region: '',
-          date: '',
-      })
-      let nums = ref(2)
-      let documFlag = ref(0)
-      let text1 = ref('')
+      import service  from '@/utils/http.ts';
+      import { ElMessage, ElMessageBox } from 'element-plus'
+      import { useExpreListStore } from '@/store/store'
+      import { dataBox } from 'js-tool-big-box';
+      const expreList = useExpreListStore()
+      let zkFlag = ref(false)
+  
+      let fullscreenLoading = ref(false)
+      let logisticsStatus = ref('')
+      let ydStatus = ref('')
       let forms = ref({
-        name: '',
-        region: '',
-        date1: '',
-        date2: '',
+        waybillNumber: '',
+        latestSignTimes: [],
+        recipientName: '',
+        senderName: '',
+        sendingSite: '',
       })
-      
-      // 弹窗
-      let popis = ref(null)
-      function wlBtn() {
-        popis.value.flag = true
+      let sendData = ref({
+        page: 1,
+        pageSize: 10,
+      })
+      let tatals = ref(0)
+      let ruleFormRef = ref() 
+      let tableData = ref([])
+      let checkList = ref([])
+        import axios from 'axios';
+      // 导出
+        function expoBtn() {
+            let specialAttention = ''
+            let logisticsStatuss = ''
+            if(logisticsStatus.value){
+                ydStatus.value = ''
+                logisticsStatuss = logisticsStatus.value
+            }else{
+                logisticsStatus.value = ''
+                if(ydStatus.value == '特别关注'){
+                    logisticsStatuss = ''
+                    specialAttention = '1'
+                }else if(ydStatus.value == '正常转运中'){
+                    logisticsStatuss = '正常转运'
+                }else if(ydStatus.value == '正常签收'){
+                    logisticsStatuss = '已签收'
+                }else{
+                    logisticsStatuss = ydStatus.value
+                }
+            }
+            let {latestSignTimes,...formDatas} = forms.value
+            let startDateStr = ''
+            let endDateStr = ''
+            if(latestSignTimes){
+                startDateStr = latestSignTimes[0]
+                endDateStr = latestSignTimes[1]
+            }else{
+                startDateStr = ''
+                endDateStr = ''
+            }
+            fullscreenLoading.value = true
+            axios({
+                url: '/api/exportSendingPackageOrder',
+                method: 'GET',
+                responseType: 'blob',
+                    params: {
+                        specialAttention,
+                        logisticsStatus: logisticsStatuss,
+                        startDateStr,
+                        endDateStr,
+                        ...formDatas,
+                    },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                    fullscreenLoading.value = false
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', '跟单数据.xlsx');
+                    document.body.appendChild(link);
+                    link.click();
+                })
+                .catch(error => {
+                    console.error('There was an error!', error);
+                });
+        }
+      // 复制
+      const go1Copy = (item)=>{
+        const text = `最新动态：${JSON.parse(item.logisticsInfo)[0].scanTime } ${JSON.parse(item.logisticsInfo)[0].waybillTrace}`     
+        dataBox.copyText(text, () => {
+            ElMessage({           
+                type: 'success',          
+                message: '复制成功'      
+            })  
+        }, () => {  
+            ElMessage({      
+                type: 'error', 
+                message: '复制异常，请尝试其他方式复制内容'
+            })    
+        })
+    }
+      // 标记已签收
+      function yqsBtn(){
+        console.log(checkList.value,8888)
+        if(!checkList.value.length){
+            ElMessage({
+                message: '请勾选内容~',
+                type: 'warning',
+                plain: true,
+            })
+            return
+        }
+        fullscreenLoading.value = true
+        let datas = JSON.parse(JSON.stringify(checkList.value))
+        datas.forEach(item => {
+            item.logisticsStatus = '已签收'
+        })
+        service.post('updateSendingPackageOrder', {
+            sendingPackageOrders: datas,
+        }).then(res=> {
+            fullscreenLoading.value = false
+            if(res.code == 200){
+                ElMessage({
+                    message: `标记成功`,
+                    type: 'success',
+                    plain: true,
+                })
+                getGendanList()
+            }
+        })
       }
-
-      const currentPage3 = ref(5)
-      const pageSize3 = ref(100)
+      // 删除
+      function delBtn(){
+        console.log(checkList.value,9999)
+        if(!checkList.value.length){
+            ElMessage({
+                message: '请勾选内容~',
+                type: 'warning',
+                plain: true,
+            })
+            return
+        }
+        ElMessageBox.confirm(
+            '是否确认删除已勾选的运单?',
+            '提示',
+            {
+            confirmButtonText: '删除',
+            cancelButtonText: '取消',
+            confirmButtonClass: 'delSty',
+            cancelButtonClass: 'qxSty',
+            type: 'warning',
+            }
+        ).then(() => {
+                fullscreenLoading.value = true
+                service.post('deleteSendingPackageOrder',{
+                    sendingPackageOrders: checkList.value,
+                }).then(res=> {
+                    fullscreenLoading.value = false
+                    if(res.code == 200){
+                        ElMessage({
+                            message: `删除成功`,
+                            type: 'success',
+                            plain: true,
+                        })
+                        getGendanList()
+                    }
+                })
+            }).catch(() => {
+            
+        })
+      }
+      // 关注
+      function gzBtns(type, waybillNumber) {
+        console.log(checkList.value,77777)
+        if(!waybillNumber&&!checkList.value.length){
+            ElMessage({
+                message: '请勾选内容~',
+                type: 'warning',
+                plain: true,
+            })
+            return
+        }
+        fullscreenLoading.value = true
+        service.post('updateSpecialAttention',{
+            waybillNumbers: waybillNumber?[waybillNumber]:checkList.value.map(item => item.waybillNumber),
+            specialAttention: type,
+        }).then(res=> {
+            fullscreenLoading.value = false
+            if(res.code == 200){
+                ElMessage({
+                    message: `${type==1?'关注':'取消'}成功`,
+                    type: 'success',
+                    plain: true,
+                })
+                getGendanList()
+            }
+        })
+      }
+        // 监听
+        const stopWatch = watch(tableData,(newValue, OldValue) => {
+            checkList.value = tableData.value.filter(item => {
+                return item.checkFlag
+            })
+        }, { deep: true })
+      // 重置
+      function czBtn(ruleFormRef) {
+        forms.value.waybillNumber = ''
+        sendData.value.page = 1
+        ruleFormRef.resetFields();
+      }
+      // 查询
+      function cxFn() {
+        sendData.value.page = 1
+        getGendanList()
+      }
+      // 运单切换
+      function ydFn(ydName) {
+        ydStatus.value = ydName
+        sendData.value.page = 1
+        getGendanList()
+      }
+      // 异常切换
+      function tabFn(names) {
+        czBtn(ruleFormRef.value)
+        getGendanList(names)
+      }
+      // 收件人 寄件人 列表
+      let jproList = ref([])
+      let sproList = ref([])
+      function getPre() {
+        service.get('/getSenderName').then(res => {
+            if(res.code == 200){
+                console.log(res)
+                jproList.value = res.senderNames
+                sproList.value = res.recipientName
+            }
+        })
+      }
+      getPre()
+      // 跟单列表
+      function getGendanList(names) {
+        console.log(forms.value,7778888)
+        console.log(ydStatus.value,666666)
+        console.log(logisticsStatus.value,555555)
+        let specialAttention = ''
+        let logisticsStatuss = ''
+        if(typeof names == 'string'){
+            logisticsStatus.value = names
+            ydStatus.value = ''
+            logisticsStatuss = names
+        }else{
+            logisticsStatus.value = ''
+            if(ydStatus.value == '特别关注'){
+                logisticsStatuss = ''
+                specialAttention = '1'
+            }else if(ydStatus.value == '正常转运中'){
+                logisticsStatuss = '正常转运'
+            }else if(ydStatus.value == '正常签收'){
+                logisticsStatuss = '已签收'
+            }else{
+                logisticsStatuss = ydStatus.value
+            }
+        }
+        let {latestSignTimes,...formDatas} = forms.value
+        let startDateStr = ''
+        let endDateStr = ''
+        if(latestSignTimes){
+            startDateStr = latestSignTimes[0]
+            endDateStr = latestSignTimes[1]
+        }else{
+            startDateStr = ''
+            endDateStr = ''
+        }
+        fullscreenLoading.value = true
+        service.get('/getSendingPackageOrderWithFilters', {
+            params: {
+                specialAttention,
+                logisticsStatus: logisticsStatuss,
+                startDateStr,
+                endDateStr,
+                ...formDatas,
+                ...sendData.value,
+            }
+        }).then(res => {
+            fullscreenLoading.value = false
+            if(res.code == 200){
+                // logisticsStatus.value = ''
+                console.log(res)
+                tatals.value = res.totalElements
+                res.data.forEach(item => {
+                    item.checkFlag = false
+                })
+                tableData.value = res.data
+                qxChecks.value.qxCheckVal = false
+                qxChecks.value.qxCheckIntVal = false
+            }
+        })
+      }
+      getGendanList()
+      let ycydData = ref({})
+      // 异常运单数据
+      function getYcydFn() {
+        service.get('/getLogisticsTypeCounts').then(res => {
+            if(res.code == 200){
+                console.log(res)
+                ycydData.value = res.data
+            }
+        })
+      }
+      getYcydFn()
+      // 弹窗
+      let wldtInData = ref({})
+      let popis = ref(null)
+      let popFlag = ref(false)
+      function wlBtn(item) {
+        wldtInData.value = item
+        console.log(wldtInData.value,777777)
+        popFlag.value = true
+      }
+      function gbBtns(val) {
+        popFlag.value = val
+      }
+      function qxBtnFn(e) {
+        console.log(e,6666)
+        qxChecks.value.qxCheckIntVal = false
+        if(e) {
+            // 全选
+            tableData.value.map(item => {
+                item.checkFlag = true
+            })
+        }else{
+            // 取消
+            tableData.value.map(item => {
+                item.checkFlag = false
+            })
+        }
+    }
       const size = ref('default')
       const background = ref(false)
       const disabled = ref(false)
       const handleSizeChange = (val: number) => {
-          console.log(`${val} items per page`)
+          console.log(`${sendData.value.pageSize} items per page`)
+          getGendanList()
       }
       const handleCurrentChange = (val: number) => {
-          console.log(`current page: ${val}`)
+          console.log(`current page: ${sendData.value.page}`)
+          getGendanList()
       }
       let qxChecks = ref({
           qxCheckVal: false,
@@ -336,6 +667,7 @@
                   num++
               }
           })
+          console.log(num,tableData.value,22222)
           if(num==0){
               qxChecks.value.qxCheckIntVal = false
               qxChecks.value.qxCheckVal = false
@@ -350,21 +682,21 @@
       function headFlxChange(item,val) {
           if(item.fjIndeterFlag){
               tableData.value.map(i => {
-                  if(item.id == i.id){
+                  if(item.waybillNumber == i.waybillNumber){
                       i.checkFlag = true
                   }
-  
               })
           }else{
               if(val){
+                let is = 0
                   tableData.value.map(i => {
-                      if(item.id == i.id){
+                      if(item.waybillNumber == i.waybillNumber){
                           i.checkFlag = true
                       }
                   })
               }else{
                   tableData.value.map(i => {
-                      if(item.id == i.id){
+                      if(item.waybillNumber == i.waybillNumber){
                           i.checkFlag = false
                       }
                   })
@@ -373,131 +705,10 @@
           qxCheckFn()
       }
     
-      let tableData = ref([{
-          adress: '879879687685',
-          status: 1,
-          id:'1',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-          
-          
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'1',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          
-          checkFlag: false,
-          
-          
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'2',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'2',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'3',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'3',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'4',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      },{
-          adress: '879879687685',
-          status: 1,
-          id:'4',
-          amount1: '1',
-          amount2: '2024-05-12 12：53',
-          amount3: '自提',
-          amount4: '有',
-          amount5: '赵若云',
-          checkFlag: false,
-      }])
-      const times = ref('')
-      let tabSxs = ref([{
-          name: '盲区',
-          flag: false
-      },{
-          name: '加收',
-          flag: false
-      },{
-          name: '自提',
-          flag: false
-      },{
-          name: '人工',
-          flag: false
-      },])
-      const arrImg = reactive([{
-          name: '十九里镇一部',
-          imgUrl: a,
-      },{
-          name: '太安堂二部',
-          imgUrl: b,
-      },{
-          name: '中通快运十盒站',
-          imgUrl: c,
-      },{
-          name: '壹米滴答康美站',
-          imgUrl: d,
-      },{
-          name: '太安堂二部',
-          imgUrl: e,
-      },{
-          name: '快运十盒站',
-          imgUrl: f,
-      },{
-          name: '康美站康美站康美站',
-          imgUrl: g,
-      },])
   </script>
   
   <style scoped lang='scss'>
+  
   .adrBox{
     display: flex;
     align-items: center;
@@ -519,7 +730,7 @@
           box-shadow: 0px 3px 15px 0px rgba(145,145,145,0.15);
           border-radius: 12px;
           padding: 13px 20px 0;
-          height: calc(100vh - 300px);
+          height: calc(100vh - 104px);
           box-sizing: border-box;
           .querTit{
               height: 38px;
@@ -603,6 +814,11 @@
                     font-weight: bold;
                 }
             }
+            .querItem2{
+                background: #FFFFFF;
+                box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.06);
+                border: 2px solid #FFFFFF;
+            }
           }
           .sxFot{
               display: flex;
@@ -636,6 +852,7 @@
                 height: 60px;
                 color: #666666;
                 p{
+                    width: 80px;
                     margin-right: 20px;
                 }
                 .xzbBtn{
@@ -704,9 +921,7 @@
             }
           }
           .sxBox{
-              height: 68px;
               display: flex;
-              align-items: center;
               justify-content: space-between;
               margin-bottom: 20px;
               .sxTj{
@@ -722,7 +937,24 @@
                     flex: 1;
                   }
               }
+              .sxZK{
+                display: flex;
+                height: 73px;
+                align-items: center;
+                font-size: 14px;
+                color: #999999;
+                cursor: pointer;
+                margin-right: 26px;
+                img{
+                    width: 11px;
+                    height: 11px;
+                    margin-right: 4px;
+                }
+
+              }
               .sxBtns{
+                    height: 73px;
+                    align-items: center;
                   display: flex;
                   .sxBtn{
                       width: 60px;
@@ -749,8 +981,17 @@
       .tableStatus{
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          .tableStatusLef{
+            display: flex;
+            align-items: center;
+            flex: 1;
+          }
+          .tableStatusLef1{
+            justify-content: center;
+          }
             .tableConts{
-                flex: 1;
+                width: 264px;
                 font-size: 12px;
                 color: #666666;
                 .tabBtns{
@@ -776,10 +1017,7 @@
                 }
             }
           .tableBtn{
-              width: 45px;
-              height: 24px;
-              margin-right: 14px;
-              width: 45px;
+              padding: 0 6px;
               height: 24px;
               border-radius: 3px;
               text-align: center;
@@ -793,6 +1031,7 @@
           .tableBtn2{
               background: rgba(#28A745, .2);
               color: #28A745;
+              margin-left: 10px;
           }
           .tableBtn3{
               background: rgba(#FD7E14, .2);
@@ -801,6 +1040,7 @@
           .tableBtn4{
               background: rgba(#3B7DDD, .2);
               color: #3B7DDD;
+              margin-left: 4px;
           }
           .tableRgBtn{
               display: flex;
@@ -858,6 +1098,15 @@
         align-items: center;
         font-size: 14px;
         color: #DC3545;
+      }
+      .documBox1{
+        width: 25px;
+        height: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        color: #999999;
       }
     
   </style>

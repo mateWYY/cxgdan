@@ -103,7 +103,7 @@
         <el-table-column prop="amount1" fixed label="物流品牌" width="160">
             <template #default="scope">
                 <div class="tabelWls">
-                    <img src="@/assets/img/a@2x.png" alt="">
+                    <img src="@/assets/img/a.png" alt="">
                     <span>安能物流</span>
                 </div>
             </template>
@@ -132,13 +132,12 @@
 
 <script setup lang='ts'>
     import { ref,reactive } from 'vue';
-    import a from '@/assets/img/a@2x.png';
-    import b from '@/assets/img/b@2x.png';
-    import c from '@/assets/img/c@2x.png';
-    import d from '@/assets/img/d@2x.png';
-    import e from '@/assets/img/e@2x.png';
-    import f from '@/assets/img/f@2x.png';
-    import g from '@/assets/img/g@2x.png';
+    import a from '@/assets/img/a.png';
+    import b from '@/assets/img/b.png';
+    import c from '@/assets/img/c.png';
+    import d from '@/assets/img/d.png';
+    import e from '@/assets/img/e.png';
+    import f from '@/assets/img/f.png';
     const formInline = ref({
         user: '',
         region: '',
@@ -367,9 +366,6 @@
     },{
         name: '快运十盒站',
         imgUrl: f,
-    },{
-        name: '康美站康美站康美站',
-        imgUrl: g,
     },])
 </script>
 
@@ -382,7 +378,7 @@
         box-shadow: 0px 3px 15px 0px rgba(145,145,145,0.15);
         border-radius: 12px;
         padding: 0 20px;
-        height: calc(100vh - 110px);
+        height: calc(100vh - 104px);
         .querTit{
             height: 50px;
             line-height: 50px;

@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useExpreListStore } from '@/store/store'
+import monitor from '@/components/globalMonitor/monitor.vue'
+const expreData = useExpreListStore()
+expreData.getList()
 </script>
 
 <template>
-  <RouterView />
+  <div>
+    <monitor/>
+    <RouterView />
+  </div>
 </template>
 
 <style scoped>
@@ -23,7 +30,22 @@ import { RouterLink, RouterView } from 'vue-router'
     color: #FF5411;
   }
  
-  ::v-deep .el-select__wrapper.is-focused,::v-deep .el-range-editor.is-active,::v-deep .el-range-editor.is-active:hover{
+ 
+  ::v-deep .el-select__wrapper.is-focused,::v-deep .el-range-editor.is-active,::v-deep .el-range-editor.is-active:hover,::v-deep .el-input__wrapper.is-focus{
     box-shadow: 0 0 0 1px #FF5411 inset;
+  }
+  ::v-deep .el-button:hover{
+    background-color: rgba(255,84,17, .1);
+    border-color: #FF5411;
+    color: #FF5411 ;
+  }
+   ::v-deep .el-button--primary{
+    background-color: #FF5411;
+    border-color: #FF5411;
+   }
+   ::v-deep .el-button--primary:hover{
+    background-color: rgba(255,84,17, .8);
+    border-color: rgba(255,84,17, .8);
+    color: #fff ;
   }
 </style>

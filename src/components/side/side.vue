@@ -1,12 +1,51 @@
 <template>
+  <el-dialog v-model="centerDialogVisible" width="500" center>
+    <template #header>
+      <div class="dialog-header">
+        <p class="tcTit">{{ loginTxt? '重新登录': '请选择站点' }}</p>
+      </div>
+    </template>
+    <div class="tcCont">
+      <el-form
+          ref="ruleFormRef"
+          style="max-width: 600px;"
+          :model="ruleForm"
+          :rules="rules"
+          label-width="auto"
+          class="demo-ruleForm"
+          status-icon
+        >
+        <el-form-item label="站点类型" prop="type"  >
+          <el-select v-model="ruleForm.type" placeholder="请选择站点" clearable>
+            <el-option :label="item.name" :value="item.name" v-for="item,index in zdianArr" :key="index">
+              <template #default>
+                <div class="xlBox">
+                  <img :src="imgTypeFn(item.name)" />
+                  {{item.name}}
+                </div>
+              </template>
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="centerDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitForm(ruleFormRef)">
+          登录
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
   <div class="sideType" v-if="props.queryType=='exp'">
-    <div class="sideTypeItem" @click="tabNum=0" :class="{'sideTypeItem1':tabNum==0}">
+    <div class="sideTypeItem" @click="tabsFn(0)" :class="{'sideTypeItem1':tabNum==0}">
       直接查询
     </div>
-    <div class="sideTypeItem" @click="tabNum=1" :class="{'sideTypeItem1':tabNum==1}">
+    <div class="sideTypeItem" @click="tabsFn(1)" :class="{'sideTypeItem1':tabNum==1}">
       微信查询配置
     </div>
-    <div class="sideTypeItem" @click="tabNum=2" :class="{'sideTypeItem1':tabNum==2}">
+    <div class="sideTypeItem" @click="tabsFn(2)" :class="{'sideTypeItem1':tabNum==2}">
       查询记录
     </div>
   </div>
@@ -34,17 +73,17 @@
         据将不能正确同步</p>
     </div>
     <div class="sideList">
-      <div class="sideItem" v-for="(item,index) in arr" :key="index">
-        <img :src="item.imgUrl" alt="">
+      <div class="sideItem" v-for="(item,index) in expreList.expreList" @click="sideBtn(item)" :key="index">
+        <img :src="imgTypeFn(item.logisticsType)" alt="">
         <p>
           {{item.name}}
         </p>
-        <div class="sideBtn" :class="{'sideBtns': tabIndex==index}">
-          {{tabIndex==index?'掉线':'在线'}}
+        <div class="sideBtn" :class="{'sideBtns': !item.loginStatus}">
+          {{!item.loginStatus?'掉线':'在线'}}
         </div>
       </div>
     </div>
-    <div class="sideAddBtn">
+    <div class="sideAddBtn" @click="addzdFn" >
       <img src="@/assets/img/addIcon.png" alt="">
       添加更多站点
     </div>
@@ -52,35 +91,155 @@
 </template>
 
 <script setup lang='ts'>
-  import { reactive,ref } from 'vue'
-  import a from '@/assets/img/a@2x.png';
-  import b from '@/assets/img/b@2x.png';
-  import c from '@/assets/img/c@2x.png';
-  import d from '@/assets/img/d@2x.png';
+  import { reactive,ref,unref } from 'vue'
+  import { ElLoading } from 'element-plus'
+  import { useExpreListStore } from '@/store/store'
+  import { useRouter } from 'vue-router'
+
+  import service  from '@/utils/http.ts';
+  import a from '@/assets/img/a.png';
+  import b from '@/assets/img/b.png';
+  import c from '@/assets/img/c.png';
+  import d from '@/assets/img/d.png';
+  import e from '@/assets/img/e.png';
+  import f from '@/assets/img/f.png';
+  const expreList = useExpreListStore()
+  const router = useRouter()
+  const loginTxt = ref(false)
   const props = defineProps({
     queryType: {
       type: String,
       default: '',
     }
   })
+  const ruleFormRef = ref(null)
+  const ruleForm = reactive({
+    type: '',
+  })
+  const rules = reactive({
+    type: [
+    {
+      required: true,
+      message: '站点类型不能为空',
+      trigger: 'change',
+    },
+  ],})
+  let zdianArr = [{
+    name: '安能',
+    imgUrl: a
+  }, {
+    name: '顺心',
+    imgUrl: b
+  }, {
+    name: '百世',
+    imgUrl: c
+  }, {
+    name: '韵达',
+    imgUrl: d
+  }, {
+    name: '壹米',
+    imgUrl: e
+  }, {
+    name: '中通',
+    imgUrl: f
+  }]
+  let centerDialogVisible = ref(false)
   let tabNum = ref(0)
-  let arr = reactive([{
-    name: '十九里镇一部',
-    imgUrl:a,
-  },{
-    name: '太安堂二部',
-    imgUrl:b,
-  },{
-    name: '中通快运十河站阿萨德借记卡山莨菪碱',
-    imgUrl:c,
-  },{
-    name: '壹米滴答康美站阿萨德借记卡山莨菪碱',
-    imgUrl:d,
-  },])
-  let tabIndex = ref(2)
+  import { ElMessage } from 'element-plus'
+  function submitForm(formEl) {
+    if (!formEl) return
+    formEl.validate((valid, fields) => {
+    if (valid) {
+      console.log('submit!')
+      const loading = ElLoading.service({
+        lock: true,
+        text: '正在登录中...请耐心等待',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
+      service.get('/LogisticsLogin', {
+        params: {
+          type: ruleForm.type
+        }
+      }).then(res => {
+        loading.close()
+        ElMessage({
+          message: '登录成功',
+          type: 'success',
+          plain: true,
+        })
+        expreList.getList()
+        centerDialogVisible.value = false
+        console.log(res,99999)
+        if(res.code == 200){
+          service.post('/deliverySynchronization', JSON.stringify(res.data)).then(red => {
+            console.log(red)
+            if(red.code == 200){
+              service.post('/getShippingDocument', JSON.stringify({
+                user: res.data,
+                sendingPackageOrders: red.data,
+              })).then(datas => {
+                console.log(datas)
+              })
+            }
+          })
+        }
+        
+      })
+    } else {
+      console.log('error submit!', fields)
+    }
+  })
+  }
+  function addzdFn() {
+    loginTxt.value = false;
+    if(unref(ruleFormRef)){
+      unref(ruleFormRef).resetFields();
+    }
+    ruleForm.type = ''
+    centerDialogVisible.value = true;
+  }
+  function sideBtn(item) {
+    if(!item.loginStatus){
+      loginTxt.value=true
+      ruleForm.type = item.logisticsType
+      centerDialogVisible.value = true
+    }
+  }
+  function tabsFn(val: number) {
+    tabNum.value = val
+    if(val == 0) {
+      router.push({
+          path: '/checkAddress/expDelivery'
+      })
+    }
+    if(val == 2) {
+      router.push({
+          path: '/checkAddress/queryRecords'
+      })
+    }
+  }
 </script>
 
 <style scoped lang='scss'>
+.tcTit{
+  text-align: left;
+  font-weight: bold;
+  font-size: 14px;
+  color: #181818;
+}
+.tcCont{
+  padding: 30px 40px;
+}
+.xlBox{
+  display: flex;
+  align-items: center;
+  img{
+    width: 26px;
+    height: 26px;
+    margin-right: 6px;
+    border-radius: 50%;
+  }
+}
   .sideType{
     background: #FFFFFF;
     box-shadow: 0px 2px 15px 0px rgba(0,0,0,0.08);

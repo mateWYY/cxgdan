@@ -5,6 +5,7 @@
         <div class="comLeft">
           <side queryType="docum"></side>
         </div>
+        
         <div class="comRight">
             <documDan></documDan>
         </div>

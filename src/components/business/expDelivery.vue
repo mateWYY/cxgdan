@@ -3,29 +3,29 @@
     <div class="expTop">
         <h2>地址轻松查，发货更便捷</h2>
         <div class="expCx">
-            <div class="expPiLeft" :class="{'expPiLeft1':titFlag}" @click="titFlag = !titFlag">
+            <div class="expPiLeft" :class="titFlag?'expPiLeft1':''" @click="titFlag = !titFlag">
                 <div class="kdTip" v-if="checkList.length==0">
                     <span>选择物流品牌</span>
                     <img src="@/assets/img/infoIcon.png" alt="" class="xlIcon">
                 </div>
                 <div class="kdTip" v-if="checkList.length==1">
                     <div class="pinps">
-                        <img :src="arrImg[checkList[0]].imgUrl" alt="">
-                        <span :title="arrImg[checkList[0]].name">{{arrImg[checkList[0]].name}}</span>
+                        <img :src="imgTypeFn(expreList.onlineExpreList[checkList[0]].logisticsType)" alt="">
+                        <span :title="expreList.onlineExpreList[checkList[0]].logisticsType">{{expreList.onlineExpreList[checkList[0]].name}}</span>
                     </div>
                     <img src="@/assets/img/infoIcon.png" alt="" class="xlIcon">
                 </div>
                 <div class="kdTip" v-if="checkList.length>1">
                     <div class="pinpImgs">
-                        <img :src="arrImg[item].imgUrl" alt="" v-for="item,index in checkList.slice(0,5)" :key="index">
+                        <img :src="imgTypeFn(expreList.onlineExpreList[item].logisticsType)" alt="" v-for="item,index in checkList.slice(0,5)" :key="index">
                         <div class="priDy" v-if="checkList.length>5">
                             +{{ checkList.length - 5 }}
                         </div>
                     </div>
                 </div>
-                <div class="kdPinpList" @click.stop="">
+                <div class="kdPinpList" @click.stop="" v-if="titFlag"  v-click-away="titFns">
                     <el-checkbox-group v-model="checkList">
-                        <div class="kdPinpItem" :class="{'kdPinpItem1': checkList.includes(index)}" @click="priBtn(index)" v-for="item,index in arrImg" :key="index">
+                        <div class="kdPinpItem" :class="{'kdPinpItem1': checkList.includes(index)}" @click="priBtn(index)" v-for="item,index in expreList.onlineExpreList" :key="index">
                             <el-checkbox :value="index" @click.stop=""/>
                             <p :title="item.name">{{item.name}}</p>
                         </div>
@@ -37,6 +37,7 @@
                 <el-input
                     v-model="txt"
                     resize="none"
+                    @input="searInFn"
                     rows="1"
                     style="margin-right: 10px; flex: 1;"
                     type="textarea"
@@ -74,11 +75,11 @@
                     </template>
                 </el-popover>
             </div>
-            <div class="expPiBtn" v-show="btnFlag">
+            <div class="expPiBtn" v-loading.fullscreen.lock="fullscreenLoading" @click="searBtn" :loading="btnFlag">
                 <span>立即查询</span>
                 <img src="@/assets/img/ssIcon.png" alt="">
             </div>
-            <div class="expPiBtn expPiBtn1" v-show="!btnFlag">
+            <div class="expPiBtn expPiBtn1" title="请清空地址后，再查询~" v-show="false">
                 <span>查询完成</span>
                 <img src="@/assets/img/wcheng.png" alt="">
             </div>
@@ -86,41 +87,41 @@
     </div>
     <div class="expBot">
         <div class="expTit"
-        v-if="tableData.length"
         >
-            <p>共查询到<span>68</span>条信息</p>
+            <p>共查询到<span>{{tabsData.length}}</span>条信息</p>
             <div class="expBtns">
                 筛选：
-                <div class="expBtn" :class="{'expBtn1': item.flag}" @click="item.flag = !item.flag" v-for="item,index in tabSxs" :key="index">{{item.name}}</div>
+                <div class="expBtn" :class="{'expBtn1': item.flag}" @click="tabFn(item)" v-for="item,index in tabSxs" :key="index">{{item.name}}</div>
             </div>
         </div>
         <el-table
-            :data="tableData"
+            :data="tabsData"
             :span-method="objectSpanMethod"
-            v-if="tableData.length"
+            v-if="tabsData.length"
             style="width: 100%;height: calc(100% - 120px);"
              ref="multipleTableRef"
+             row-key = 'ids'
             :row-class-name="item => {
                 if(item.row.checkFlag){
                     return 'hhhh'
                 }
             }"
-            @cell-click="cellBtn"
             >
-            <!-- <el-table-column type="selection" :selectable="selectable" width="55" /> -->
+            <!-- @cell-click="cellBtn" -->
             <el-table-column fixed label="查询地址" width="294" >
                 <template #default="{row}">
                     <div class="adrBox">
                         <el-checkbox :indeterminate="row.fjIndeterFlag" v-model="row.fjCheckFlag" @click.stop="" @change="headFlxChange(row,$event)"/>
-                        <span>{{ row.adress }}</span>
+                        <span>{{ row.content }}</span>
                     </div>
                 </template>
             </el-table-column>
-            <el-table-column prop="status" fixed label="查询结果" width="180" >
+            <el-table-column prop="status" fixed label="查询结果" width="120" >
                 <template #default="scope">
                     <div class="tableStatus">
-                        <el-checkbox style="margin-right: 10px;" v-model="scope.row.checkFlag" @click.stop="" @change = "headItemChange(scope.row.id,$event)"/>
+                        <el-checkbox style="margin-right: 10px;" v-if="!tabFlag" v-model="scope.row.checkFlag" @click.stop="" @change = "headItemChange(scope.row.id,$event)"/>
                         <el-tooltip
+                            v-if="scope.row.queryResult=='盲区' || scope.row.queryResult=='不可以到'"
                             class="box-item"
                             effect="dark"
                             content="盲区 (大雪导致路面冰冻，高速封路，末端积压。) "
@@ -130,18 +131,19 @@
                                 盲区
                             </div>
                         </el-tooltip>
-                        <div class="tableBtn tableBtn2">
+                        <div class="tableBtn tableBtn2" v-else-if="scope.row.queryResult=='可以到'">
                             正常
                         </div>
-                        <div class="tableBtn tableBtn3">
+                        <div class="tableBtn tableBtn3" v-else-if="scope.row.queryResult=='加收'">
                             加收
                         </div>
-                        <div class="tableBtn tableBtn4">
+                        <div class="tableBtn tableBtn4" v-else-if="scope.row.queryResult=='自提'">
                             自提
                         </div>
                         <el-tooltip
                             class="box-item"
                             effect="dark"
+                            v-else-if="scope.row.queryResult=='转人工'"
                             content="人工客服确认中，等待片刻刷新查看结果"
                             placement="right"
                         >
@@ -151,36 +153,85 @@
                                 <span>刷新</span>
                             </div>
                         </el-tooltip>
+                        <div v-else>
+                            {{ scope.row.queryResult }}
+                        </div>
                     </div>
                 </template>
             </el-table-column>
             <el-table-column prop="amount1" fixed label="物流品牌" width="160">
                 <template #default="scope">
                     <div class="tabelWls">
-                        <img src="@/assets/img/a@2x.png" alt="">
-                        <span>安能物流</span>
+                        <img :src="imgTypeFn(scope.row.type)" alt="">
+                        <span>{{scope.row.type}}物流</span>
                     </div>
                 </template>
             </el-table-column>
-            <el-table-column prop="amount2" label="加收信息"  width="140"/>
-            <el-table-column prop="amount3" label="自提信息"  width="140"/>
-            <el-table-column prop="amount4" label="派件网点"  width="140"/>
-            <el-table-column prop="amount5" label="网点电话"  width="140"/>
-            <el-table-column prop="amount6" width="500" label="网点地址" />
+            <el-table-column prop="additionalInfo" label="加收信息"  width="140">
+                <template #default="scope">
+                    <el-tooltip
+                    v-if="scope.row.additionalInfo"
+                    class="box-item"
+                    effect="dark"
+                    :content="scope.row.additionalInfo"
+                    placement="right"
+                >
+                    <div class="txtPen">
+                        {{scope.row.additionalInfo}}
+                    </div>
+                </el-tooltip>
+                </template>
+            </el-table-column>
+            <el-table-column prop="pickupInfo" label="自提信息"  width="140">
+                <template #default="scope">
+                    <el-tooltip
+                    v-if="scope.row.pickupInfo"
+                    class="box-item"
+                    effect="dark"
+                    :content="scope.row.pickupInfo"
+                    placement="right"
+                >
+                    <div class="txtPen">
+                        {{scope.row.pickupInfo}}
+                    </div>
+                </el-tooltip>
+                </template>
+            </el-table-column>
+            <el-table-column prop="deliveryPoint" label="派件网点"  width="140"/>
+            <!-- <el-table-column prop="pointPhone" label="网点电话"  width="140">
+                <template #default="scope">
+                   <div v-html="scope.row.pointPhone?.replace(/,/g,'\n')"></div>
+                </template>
+            </el-table-column> -->
+            <el-table-column prop="pointAddress" width="500" label="网点地址" >
+                <template #default="scope">
+                    <el-tooltip
+                    v-if="scope.row.pointAddress"
+                    class="box-item"
+                    effect="dark"
+                    :content="scope.row.pointAddress"
+                    placement="right"
+                >
+                    <div class="txtPen">
+                        {{scope.row.pointAddress}}
+                    </div>
+                </el-tooltip>
+                </template>
+            </el-table-column>
             <el-table-column label="操作" fixed="right" width="112">
                 <template #default="scope">
-                   <div class="czBtns">
+                   <div class="czBtns" v-if="scope.row.queryResult!='请求繁忙，请稍后再试'">
                         <span class="dexBtn" @click.stop="">
                             详情
                         </span>
-                        <span @click.stop="">
+                        <span @click.stop="go1Copy(scope.row)">
                             复制
                         </span>
                    </div>
                 </template>
             </el-table-column>
         </el-table>
-        <div class="expFoot" v-if="tableData.length">
+        <div class="expFoot" v-if="tabsData.length">
             <div class="xzbQx">
                 <el-checkbox v-model="qxChecks.qxCheckVal" :indeterminate="qxChecks.qxCheckIntVal" @change="qxBtnFn"/>
                 <p>
@@ -189,16 +240,16 @@
                 <img src="@/assets/img/infoIcon.png" alt="">
             </div>
             <div class="xzbLeft">
-                <p>已选 0 项</p>
-                <div class="xzbBtn xzbBtn1">
+                <p>已选 {{selectKeyFn.length}} 项</p>
+                <div class="xzbBtn xzbBtn1" @click="go2Copy">
                     复制
                 </div>
-                <div class="xzbBtn">
+                <div class="xzbBtn" @click="expoBtn">
                     导出
                 </div>
             </div>
         </div>
-        <div class="expZwBox" v-if="!tableData.length">
+        <div class="expZwBox" v-if="!tabsData.length">
             <img src="@/assets/img/zwImg.png" alt="">
             <p>请在搜索框输入地址进行查询哦~</p>
         </div>
@@ -207,37 +258,300 @@
 </template>
 
   <script setup lang='ts'>
-    import { ref, reactive } from 'vue'
-    import a from '@/assets/img/a@2x.png';
-    import b from '@/assets/img/b@2x.png';
-    import c from '@/assets/img/c@2x.png';
-    import d from '@/assets/img/d@2x.png';
-    import e from '@/assets/img/e@2x.png';
-    import f from '@/assets/img/f@2x.png';
-    import g from '@/assets/img/g@2x.png';
+    import { ref, reactive,computed  } from 'vue'
+    import a from '@/assets/img/a.png';
+    import b from '@/assets/img/b.png';
+    import c from '@/assets/img/c.png';
+    import d from '@/assets/img/d.png';
+    import e from '@/assets/img/e.png';
+    import f from '@/assets/img/f.png';
+    import { useExpreListStore } from '@/store/store'
+    const expreList = useExpreListStore()
+    import service  from '@/utils/http.ts';
+    import { ElMessage } from 'element-plus'
+    import { dataBox } from 'js-tool-big-box';
 
     let txt = ref('')
+    let pasteTxt = ref('哈哈哈哈')
+    // 单个复制
+    const go1Copy = (item)=>{
+        const text = 
+`查询地址： ${item.content}
+查询结果: ${item.queryResult}
+物流品牌: ${item.type}
+加收信息：${item.additionalInfo || '无'}
+自提信息：${item.pickupInfo || '无'}
+网点信息ℹ
+网点名称：${item.deliveryPoint || '无'}
+网点地址：${item.pointAddress || '无'}`
+// ${item.pointPhone?item.pointPhone.split(',').filter((t) => t !== "").map(i => {
+// return `📞 ${i}
+// `}).join(''):''}     
+        dataBox.copyText(text, () => {   
+            ElMessage({           
+                type: 'success',          
+                message: '复制成功'      
+            })  
+        }, () => {  
+            ElMessage({      
+                type: 'error', 
+                message: '复制异常，请尝试其他方式复制内容'
+            })    
+        })
+    }
+    // 批量复制
+    const go2Copy =() =>{     
+        const text = selectKeyFn.value.map(item => {
+            if(item.queryResult=='请求繁忙，请稍后再试'){
+                return ''
+            }
+return `查询地址： ${item.content}
+查询结果: ${item.queryResult}
+物流品牌: ${item.type}
+加收信息：${item.additionalInfo || '无'}
+自提信息：${item.pickupInfo || '无'}
+网点信息ℹ
+网点名称：${item.deliveryPoint || '无'}
+网点地址：${item.pointAddress || '无'}
+`
+// ${item.pointPhone?item.pointPhone.split(',').filter((t) => t !== "").map(i => {
+// return `📞 ${i}
+// `}).join(''):''}
+}).filter((t) => t!=="").join(`
+`)    
+        dataBox.copyText(text, () => {   
+            ElMessage({           
+                type: 'success',          
+                message: '复制成功'      
+            })  
+        }, () => {  
+            ElMessage({      
+                type: 'error', 
+                message: '复制异常，请尝试其他方式复制内容'
+            })    
+        })
+    }
+    import axios from 'axios';
+
+    let nums = ref(0)
     let val = ref(false)
     let titFlag = ref(false)
+    function titFns() {
+        titFlag.value = false
+    }
     let visible = ref(false)
     let btnFlag = ref(true)
+    let tabFlag = ref(false)
+    let tabTxt = ref('')
     let checkList = ref([])
     let qxChecks = ref({
         qxCheckVal: false,
         qxCheckIntVal: false,
     })
+    let tableData = ref([])
+    let tabsData = computed(() => {
+        console.log(tabTxt.value,tabFlag.value,77777)
+        let arr =  tableData.value.filter(item => {
+            if(tabTxt.value==''){
+                return item
+            }else{
+                if(tabTxt.value.includes(item.queryResult)){
+                    return item
+                }
+            }
+        })
+        return arr
+    })
+    let selectKeyFn = computed(() => {
+        let arr =  []
+        console.log(tableData.value,tabsData.value,2222)
+        if(tabFlag.value){
+            tabsData.value.forEach(item => {
+                if(item.fjCheckFlag){
+                    arr.push(item)
+                }
+            })
+        }else{
+            tabsData.value.forEach(item => {
+                if(item.checkFlag){
+                    arr.push(item)
+                }
+            })
+        }
+        return arr
+    })
+    let tabSxs = ref([{
+        name: '盲区',
+        flag: false
+    },{
+        name: '加收',
+        flag: false
+    },{
+        name: '自提',
+        flag: false
+    },{
+        name: '人工',
+        flag: false
+    },])
+    function expoBtn() {
+        console.log(selectKeyFn.value,2222)
+        axios.post('/api/exportCheckAddress', {
+            data: selectKeyFn.value
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            responseType: 'blob' // 确保响应类型正确
+        })
+        .then(response => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', '查地址数据.xlsx');
+            document.body.appendChild(link);
+            link.click();
+        })
+        .catch(error => {
+            console.error('There was an error!', error);
+        });
+        // service.post('/exportCheckAddress',{
+        //     data: selectKeyFn.value
+        // }).then(res => {
+        //     console.log(res)
+        // })
+    }
+    // 筛选切换
+    function tabFn(item) {
+        item.flag = !item.flag
+        let is = 0 
+        let arr = []
+        tabSxs.value.forEach(items => {
+            if(items.flag){
+                is=1
+                let str = ''
+                if(items.name=='盲区'){
+                    str = items.name + '不可以到'
+                }else{
+                    str = items.name
+                }
+                arr.push(str)
+            }
+        });
+        tabTxt.value =  arr.join(',')
+        if(is){
+            tabFlag.value = true
+        }else{
+            tabFlag.value = false
+        }
+        resetFn()
+    } 
+    // 选择重置
+    function resetFn() {
+        tableData.value.forEach(item => {
+            item.checkFlag = false;
+            item.fjCheckFlag = false;
+            item.fjIndeterFlag = false;
+        })
+        qxChecks.value = {
+            qxCheckVal: false,
+            qxCheckIntVal: false,
+        }
+    }
+    // 地址查询
+    const fullscreenLoading = ref(false)
+    function searBtn() {
+        if(!checkList.value.length){
+            ElMessage({
+                message: '请选择您要搜索的物流品牌~',
+                type: 'warning',
+                plain: true,
+            })
+            return
+        }
+        if(!txt.value){
+            ElMessage({
+                message: '请输入您要查询的地址~',
+                type: 'warning',
+                plain: true,
+            })
+            return
+        }
+        btnFlag.value = true
+        let selectedSites = checkList.value.map(item => {
+            return expreList.onlineExpreList[item].account
+        })
+        fullscreenLoading.value = true
+        if(selectedSites.length==1){
+            tabFlag.value = true
+        }else{
+            tabFlag.value = false
+        }
+        
+        console.log(selectedSites,txt.value,9999998)
+        service.post('/checkAddress',{
+            selectedSites,
+            content: txt.value,
+        }).then(res => {
+            btnFlag.value = false
+            fullscreenLoading.value = false
+            console.log(res)
+            if(res.code == 200){
+                if(res.msg!='查询成功'){
+                    ElMessage({
+                        message: res.msg,
+                        type: 'warning',
+                        plain: true,
+                    })
+                }
+                txt.value = ''
+                let ids = 1
+                let id = 1
+                let idtxt = ''
+                let num = 0
+                let txts = ''
+                res.data.forEach(item => {
+                    item.checkFlag = false;
+                    item.fjCheckFlag = false;
+                    item.fjIndeterFlag = false;
+                    item.deliveryPoint = item.deliveryPoint?.replace(/\n/g,'');
+                    item.pointPhone = item.pointPhone?.replace(/\n/g,'');
+                    item.ids = ids
+                    if(idtxt==''||idtxt == item.content){
+                        item.id = id;
+                        idtxt = item.content
+                    }else{
+                        id++
+                        item.id = id;
+                        idtxt = item.content
+                    }
+                    ids++
+                    if(txts==''||txts == item.content){
+                        num++
+                        txts = item.content
+                    }
+                });
+                nums.value = num
+                tableData.value = res.data
+            }
+        })
+    }
+    function searInFn() {
+        if(txt.value==''){
+            btnFlag.value = true
+        }
+    }
 
-    let nums = ref(2)
-
-    const selectable = (row) => ![1, 2].includes(row.id)
     const objectSpanMethod = ({
         rowIndex,
         columnIndex,
         }) => {
+        if(tabFlag.value){
+            return
+        }
         if (columnIndex === 0) {
-            if (rowIndex % 2 === 0) {
+            if (rowIndex % nums.value === 0) {
             return {
-                rowspan: 2,
+                rowspan: nums.value,
                 colspan: 1,
             }
             } else {
@@ -254,14 +568,14 @@
 
         if(e) {
             // 全选
-            tableData.value.map(item => {
+            tabsData.value.map(item => {
                 item.fjIndeterFlag = false
                 item.fjCheckFlag = true
                 item.checkFlag = true
             })
         }else{
             // 取消
-            tableData.value.map(item => {
+            tabsData.value.map(item => {
                 item.fjIndeterFlag = false
                 item.fjCheckFlag = false
                 item.checkFlag = false
@@ -270,7 +584,7 @@
     }
     function qxCheckFn() {
         let num = 0
-        tableData.value.map(item => {
+        tabsData.value.map(item => {
             if(item.checkFlag){
                 num++
             }
@@ -278,7 +592,7 @@
         if(num==0){
             qxChecks.value.qxCheckIntVal = false
             qxChecks.value.qxCheckVal = false
-        }else if(num==tableData.value.length){
+        }else if(num==tabsData.value.length){
             qxChecks.value.qxCheckIntVal = false
             qxChecks.value.qxCheckVal = true
         }else{
@@ -289,7 +603,7 @@
     function cellBtn(e) {
         console.log(e,99999)
         e.checkFlag = !e.checkFlag 
-        let newArr = tableData.value.filter(item => item.id == e.id)
+        let newArr = tabsData.value.filter(item => item.id == e.id)
         let n = 0
         for(let item of newArr){
             if(item.checkFlag){
@@ -297,21 +611,21 @@
             }
         }
         if(n==nums.value){
-            tableData.value.map(items => {
+            tabsData.value.map(items => {
                 if(items.id == e.id){
                     items.fjCheckFlag=true
                     items.fjIndeterFlag = false
                 }
             })
         }else if(n==0){
-            tableData.value.map(items => {
+            tabsData.value.map(items => {
                 if(items.id == e.id){
                     items.fjCheckFlag=false
                     items.fjIndeterFlag = false
                 }
             })
         }else{
-            tableData.value.map(items => {
+            tabsData.value.map(items => {
                 if(items.id == e.id){
                     items.fjCheckFlag=false
                     items.fjIndeterFlag = true
@@ -321,32 +635,63 @@
         qxCheckFn()
     }
     function headFlxChange(item,val) {
-        if(item.fjIndeterFlag){
-            tableData.value.map(i => {
-                if(item.id == i.id){
-                    i.fjIndeterFlag = false
-                    i.fjCheckFlag = true
-                    i.checkFlag = true
-                }
-
-            })
-        }else{
-            if(val){
-                tableData.value.map(i => {
-                    if(item.id == i.id){
+        if(tabFlag.value) {
+            // 无合并
+            if(item.fjIndeterFlag){
+                tabsData.value.map(i => {
+                    if(item.ids == i.ids){
                         i.fjIndeterFlag = false
                         i.fjCheckFlag = true
                         i.checkFlag = true
                     }
                 })
             }else{
-                tableData.value.map(i => {
+                if(val){
+                    tabsData.value.map(i => {
+                        if(item.ids == i.ids){
+                            i.fjIndeterFlag = false
+                            i.fjCheckFlag = true
+                            i.checkFlag = true
+                        }
+                    })
+                }else{
+                    tabsData.value.map(i => {
+                        if(item.ids == i.ids){
+                            i.fjIndeterFlag = false
+                            i.fjCheckFlag = false
+                            i.checkFlag = false
+                        }
+                    })
+                }
+            }
+        }else{
+            if(item.fjIndeterFlag){
+                tabsData.value.map(i => {
                     if(item.id == i.id){
                         i.fjIndeterFlag = false
-                        i.fjCheckFlag = false
-                        i.checkFlag = false
+                        i.fjCheckFlag = true
+                        i.checkFlag = true
                     }
+
                 })
+            }else{
+                if(val){
+                    tabsData.value.map(i => {
+                        if(item.id == i.id){
+                            i.fjIndeterFlag = false
+                            i.fjCheckFlag = true
+                            i.checkFlag = true
+                        }
+                    })
+                }else{
+                    tabsData.value.map(i => {
+                        if(item.id == i.id){
+                            i.fjIndeterFlag = false
+                            i.fjCheckFlag = false
+                            i.checkFlag = false
+                        }
+                    })
+                }
             }
         }
         qxCheckFn()
@@ -354,7 +699,7 @@
     function headItemChange(id,val) {
         if(val){
             // 选中
-            let newArr = tableData.value.filter(item => item.id == id)
+            let newArr = tabsData.value.filter(item => item.id == id)
             let n = 0
             for(let item of newArr){
                 if(item.checkFlag){
@@ -362,14 +707,14 @@
                 }
             }
             if(n==nums.value){
-                tableData.value.map(items => {
+                tabsData.value.map(items => {
                     if(items.id == id){
                         items.fjCheckFlag=true
                         items.fjIndeterFlag = false
                     }
                 })
             }else{
-                tableData.value.map(items => {
+                tabsData.value.map(items => {
                     if(items.id == id){
                         items.fjCheckFlag=false
                         items.fjIndeterFlag = true
@@ -378,7 +723,7 @@
             }
         }else{
             // 取消选中
-            let newArr = tableData.value.filter(item => item.id == id)
+            let newArr = tabsData.value.filter(item => item.id == id)
             let n = 0
             for(let item of newArr){
                 if(item.checkFlag){
@@ -386,14 +731,14 @@
                 }
             }
             if(n==0){
-                tableData.value.map(items => {
+                tabsData.value.map(items => {
                     if(items.id == id){
                         items.fjCheckFlag=false
                         items.fjIndeterFlag = false
                     }
                 })
             }else{
-                tableData.value.map(items => {
+                tabsData.value.map(items => {
                     if(items.id == id){
                         items.fjCheckFlag=false
                         items.fjIndeterFlag = true
@@ -403,146 +748,7 @@
         }
         qxCheckFn()
     }
-    let tableData = ref([{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'1',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        checkFlag: false,
-        fjCheckFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'1',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        checkFlag: false,
-        fjIndeterFlag: false,
-        fjCheckFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'2',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        fjCheckFlag: false,
-        checkFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'2',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        fjCheckFlag: false,
-        checkFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'3',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        checkFlag: false,
-        fjCheckFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'3',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        checkFlag: false,
-        fjCheckFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'4',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        checkFlag: false,
-        fjCheckFlag: false,
-        fjIndeterFlag: false,
-    },{
-        adress: '黑龙江省哈尔滨市宾县满井镇',
-        status: 1,
-        id:'4',
-        amount1: '1',
-        amount2: '丰台宛平城s',
-        amount3: '丰台宛平城s',
-        amount4: '丰台宛平城s',
-        amount5: '13856855668',
-        amount6: '安徽省亳州市谯城区超级物流园2区302拷贝安徽省亳州市谯城区超级物流园2区302 拷贝安徽省亳州市谯城区超级物流园2区302 拷贝',
-        fjCheckFlag: false,
-        checkFlag: false,
-        fjIndeterFlag: false,
-    }])
-    let tabSxs = ref([{
-        name: '盲区',
-        flag: false
-    },{
-        name: '加收',
-        flag: false
-    },{
-        name: '自提',
-        flag: false
-    },{
-        name: '人工',
-        flag: false
-    },])
-    const arrImg = reactive([{
-        name: '十九里镇一部',
-        imgUrl: a,
-    },{
-        name: '太安堂二部',
-        imgUrl: b,
-    },{
-        name: '中通快运十盒站',
-        imgUrl: c,
-    },{
-        name: '壹米滴答康美站',
-        imgUrl: d,
-    },{
-        name: '太安堂二部',
-        imgUrl: e,
-    },{
-        name: '快运十盒站',
-        imgUrl: f,
-    },{
-        name: '康美站康美站康美站',
-        imgUrl: g,
-    },])
+
     function priBtns(e) {
         checkList.value = e
         console.log(checkList.value,66666)
@@ -560,7 +766,16 @@
 <style scoped lang='scss'>
        
 
-
+    .txtPen{
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+    .box-item{
+        width: 150px !important;
+    }
+    
     .tabelWls{
         display: flex;
         img{
@@ -574,9 +789,15 @@
             color: #666666;
         }
     }
+    .adrBox{
+        display: flex;
+        align-items: center;
+        span{
+            margin-left: 10px;
+        }
+    }
     .tableStatus{
         display: flex;
-        flex-wrap: wrap;
         align-items: center;
         .tableBtn{
             width: 45px;
@@ -664,8 +885,8 @@
         margin-top: -49px;
         background: #FFFFFF;
         box-shadow: 0px 3px 15px 0px rgba(145,145,145,0.15);
-        border-radius: 12px 12px 0 0 ;
-        height: calc( 100vh - 330px);
+        border-radius: 12px ;
+        height: calc( 100vh - 325px);
         overflow: hidden;
         padding: 0 20px;
         .expFoot{
@@ -870,7 +1091,7 @@
             }
             .expPiBtn1{
                 opacity: 0.4;
-                cursor: no-drop;
+                cursor: pointer;
                 img{
                     width: 17px;
                     height: 11px;

@@ -5,7 +5,7 @@
     </div>
     <div class="headRig">
       <div class="headtabs">
-        <div class="headtab" v-for="(item,index) in arr" @click="tabIndex=index" :class="{'tabActive':tabIndex==index}" :key="index">
+        <div class="headtab" v-for="(item,index) in arr" @click="tbFn(index)" :class="{'tabActive':tabFn.tabs==index}" :key="index">
           {{item}}
         </div>
       </div>
@@ -30,8 +30,29 @@
 
 <script setup lang='ts'>
   import { reactive,ref } from 'vue'
+  import { useRouter  } from 'vue-router'
+  const router = useRouter ();
   let arr = reactive(['首页','查地址','跟单','比价','录单','设置'])
-  let tabIndex = ref(0)
+  import { useTabStore } from '@/store/store'
+  const tabFn = useTabStore()
+  function tbFn(val:number) {
+    tabFn.setTab(val)
+    if(val==1){
+      router.push({
+        path: '/checkAddress/expDelivery',
+      })
+    }else if(val==2){
+      router.push({
+        path: '/documentation',
+      })
+    }else if(val == 3){
+      router.push({
+        path: '/priceCparison',
+      })
+    }
+    
+  } 
+
 </script>
 
 <style scoped lang='scss'>

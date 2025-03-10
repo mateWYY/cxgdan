@@ -6,7 +6,7 @@
           <img src="@/assets/img/szIcon.png" alt="" class="icon">
           <p>选择开单系统：</p>
           <div class="priImgs">
-              <img :src="arrImg[item].imgUrl" v-for="item,index in checkList.slice(0,5)" :style="{'marginLeft': `-10px`}" :key="index" alt="">
+              <img :src="imgTypeFn(expreList.onlineExpreList[checkList[item]].logisticsType)" v-for="item,index in checkList.slice(0,5)" :style="{'marginLeft': `-10px`}" :key="index" alt="">
               <div class="priDy" v-if="checkList.length>5">
                 +{{ checkList.length - 5 }}
               </div>
@@ -16,10 +16,10 @@
           </div>
           <img src="@/assets/img/iconX.png" alt="" class="xlIcon">
         </div>
-        <div class="priceTitCont" @click.stop="">
+        <div class="priceTitCont" @click.stop="" v-if="titFlag" v-click-away="titFns">
           <el-checkbox-group v-model="checkList">
-            <div class="priceTitItem" :class="{'priceTitItem1': checkList.includes(index)}" @click="priBtn(index)" v-for="item,index in arrImg" :key="index">
-              <img :src="item.imgUrl" alt="">
+            <div class="priceTitItem" :class="{'priceTitItem1': checkList.includes(index)}" @click="priBtn(index)" v-for="item,index in expreList.onlineExpreList" :key="index">
+              <img :src="imgTypeFn(item.logisticsType)" alt="">
               <p>{{item.name}}</p>
               <el-checkbox :value="index" @click.stop=""/>
             </div>
@@ -38,7 +38,7 @@
         <div class="priLef">
           <p>收件地址</p>
           <el-input
-            v-model="input"
+            v-model="infos"
             class="inClass"
             style="width: 550px;"
             placeholder="请输入地址"
@@ -49,7 +49,7 @@
           <p>结算重量（Kg）</p>
           <el-input
             class="inClass"
-            v-model="input"
+            v-model="weights"
             style="width: 150px;"
             placeholder="请输入"
             clearable
@@ -59,110 +59,150 @@
       <div v-show="tabsIndex==2">
         <div class="priPlFrom">
           <p>智能解析</p>
-          <el-input
-            v-model="txt"
-            maxlength="2000"
-            style="width: 710px;"
-            rows="5"
-            placeholder="请输入收件地址和结算重量，如：安徽省亳州市谯城区万达B座写字楼1602室20.5"
-            show-word-limit
-            resize="none"
-            type="textarea"
-          />
+          <div class="priPlBoxs">
+            <el-input
+              v-model="txt"
+              maxlength="2000"
+              style="width: 710px;"
+              rows="5"
+              @blur="priInput"
+              placeholder="请输入收件地址和结算重量，如：安徽省亳州市谯城区万达B座写字楼1602室20.5"
+              resize="none"
+              type="textarea"
+            />
+            <div class="priPlBtn">
+              智能解析
+            </div>
+          </div>
           <div class="priPlTable">
-            <el-table :data="tableData" style="width: 100%">
-              <el-table-column prop="address" label="收件地址" />
-              <el-table-column prop="num" label="结算重量（Kg）"/>
+            <el-table :data="tableData" style="width: 100%;height: 100%;" @row-click="rowBtn">
+              <el-table-column prop="address" label="收件地址">
+                <template #default="scope">
+                  <div v-if="!scope.row.flags">
+                    {{ scope.row.address }}
+                  </div>
+                  <div v-else>
+                    <el-input v-model="scope.row.address" />
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="num" label="结算重量（Kg）">
+                <template #default="scope">
+                  <div v-if="!scope.row.flags">
+                    {{ scope.row.num }}
+                  </div>
+                  <div v-else>
+                    <el-input v-model="scope.row.num" />
+                  </div>
+                </template>
+              </el-table-column>
             </el-table>
           </div>
         </div>
       </div>
-      <div class="priBtn">
-        智能比价
+      <div class="priBtn" v-loading.fullscreen.lock="fullscreenLoading" @click="priceCompBtn">
+        比价
         <img src="@/assets/img/btns.png" alt="" class="prizIcon">
       </div>
-
     </div>
-    <div class="priceBot" :style="{'marginTop': tabsIndex==1?'-330px':'-64px'}">
+    <div class="priceBot" :style="{'marginTop': tabsIndex==1?'-330px':'-44px'}">
       <div v-if="tabsIndex==1" class="dgBox">
-        <div class="expreDeliverItem" v-for="item,index in 9" :key="index">
-          <div class="experImg">
-            <img src="" alt="">
-          </div>
-          <div class="experInfo">
-            <div class="experInfoTit">
-              <span>安能物流</span>
-              <div class="experInfoStatus">
-                Mini小件
+        <template v-if="priceData1.length">
+          <div class="expreDeliverItem" v-for="item,index in priceData1[0]?.data" :key="index">
+            <div class="expreZbox" v-if="item.priceType=='比价异常'">
+              <img src="@/assets/img/gtan.png" alt="">
+              {{ item.remark }}
+            </div>
+            <div class="experImg">
+              <img :src="imgTypeFn(item.type)" alt="">
+            </div>
+            <div class="experInfo">
+              <div class="experInfoTit">
+                <span>{{item.type}}物流</span>
+                <div class="experInfoStatus">
+                  {{item.priceType}}
+                </div>
+                <!-- <div class="experInfoStatus experInfoStatus1">
+                  预计2天到达
+                </div> -->
               </div>
-              <div class="experInfoStatus experInfoStatus1">
-                预计2天到达
+              <div class="experInfoTip">
+                <span>{{item.name}}</span>
               </div>
             </div>
-            <div class="experInfoTip">
-              <span>安徽省亳州市</span>
+            <div class="experRig">
+              <!-- <div class="experRigBtn" v-if="listIndex==item">
+                去录单
+              </div> -->
+              <p>
+                总成本
+                <i>￥</i>
+                <span>{{item.price}}</span>
+              </p>
+            </div>
+            <div class="experStatusBox">
+              <!-- <div class="experStatus">
+                <img src="@/assets/img/zkdda.png" alt="">
+              </div> -->
+              <div class="experStatus" v-if="index==0">
+                <img src="@/assets/img/zdjia.png" alt="">
+              </div>
             </div>
           </div>
-          <div class="experRig">
-            <div class="experRigBtn" v-if="listIndex==item">
-              去录单
-            </div>
-            <p v-if="listIndex!=item">
-              总成本
-              <i>￥</i>
-              <span>16.5</span>
-            </p>
-          </div>
-          <div class="experStatusBox" v-if="listIndex!=item">
-            <div class="experStatus">
-              <img src="@/assets/img/zkdda.png" alt="">
-            </div>
-            <div class="experStatus">
-              <img src="@/assets/img/zdjia.png" alt="">
-            </div>
-          </div>
+        </template>
+        <div v-else class="priceCont">
+          <el-empty description="暂无比价"></el-empty>
         </div>
       </div>
       <div v-if="tabsIndex==2">
         <div class="plList" >
-          <div class="plItem" v-for="item,index in 4" :key="index">
-            <div class="plTit">
-              <div class="plDz">
-                地址1
+          <template v-if="priceData2.length">
+            <div class="plItem" v-for="item,index in priceData2" :key="index">
+              <div class="plTit">
+                <div class="plDz">
+                  地址{{ index + 1 }}
+                </div>
+                <p>{{item.name}}<span>{{item.weight}}Kg</span></p>
               </div>
-              <p>安徽省亳州市谯城区星光大厦1802室<span>59.8Kg</span></p>
-            </div>
-            <div class="plKys">
-              <div class="plKyItem" v-for="i,s in 8" :key="s">
-                <div class="plKyDj">
-                  最低价
-                </div>
-                <div class="plKyDay">
-                  <img src="@/assets/img/sdIcon.png" alt="">
-                  <p>最快到达 | 预计2天到达</p>
-                </div>
-                <div class="plKyTop">
-                  <div class="plKyMoney">
-                    <p>总成本</p>
-                    <h2>
-                      <span>￥</span>
-                      16.5
-                    </h2>
+              <div class="plKys">
+                <div class="plKyItem" v-for="i,s in item.data" :key="s">
+                  <div class="expreZbox" v-if="i.priceType=='比价异常'">
+                    <img src="@/assets/img/gtan.png" alt="">
+                    {{ i.remark }}
                   </div>
-                  <div class="plKyStatus">
-                    Mini小件
+                  <div class="plKyDj" v-if="s==0">
+                    最低价
                   </div>
-                </div>
-                <div class="plKyBot">
-                  <img src="@/assets/img/a@2x.png" alt="">
-                  <div class="plKyRig">
-                    <h2>安能物流</h2>
-                    <p>安徽省亳州市</p>
+                  <!-- <div class="plKyDay">
+                    <img src="@/assets/img/sdIcon.png" alt="">
+                    <p>最快到达 | 预计2天到达</p>
+                  </div> -->
+                  <div class="plKyTop">
+                    <div class="plKyMoney">
+                      <p>总成本</p>
+                      <h2>
+                        <span>￥</span>
+                        {{i.price}}
+                      </h2>
+                    </div>
+                    <div class="plKyStatus">
+                      {{i.priceType}}
+                    </div>
+                  </div>
+                  <div class="plKyBot">
+                    <img :src="imgTypeFn(i.type)" alt="">
+                    <div class="plKyRig">
+                      <h2>{{i.type}}物流</h2>
+                      <p>{{i.name}}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+          <div v-else class="priceCont">
+            <el-empty description="暂无比价"></el-empty>
+        </div>
         </div>
       </div>
     </div>
@@ -171,56 +211,148 @@
 
 <script setup lang='ts'>
   import { ref, reactive } from 'vue'
-  import a from '@/assets/img/a@2x.png';
-  import b from '@/assets/img/b@2x.png';
-  import c from '@/assets/img/c@2x.png';
-  import d from '@/assets/img/d@2x.png';
-  import e from '@/assets/img/e@2x.png';
-  import f from '@/assets/img/f@2x.png';
-  import g from '@/assets/img/g@2x.png';
-
-  const input = ref('')
+  import a from '@/assets/img/a.png';
+  import b from '@/assets/img/b.png';
+  import c from '@/assets/img/c.png';
+  import d from '@/assets/img/d.png';
+  import e from '@/assets/img/e.png';
+  import f from '@/assets/img/f.png';
+  import { useExpreListStore } from '@/store/store'
+  import service  from '@/utils/http.ts';
+  import { ElMessage } from 'element-plus'
+  const expreList = useExpreListStore()
+  const infos = ref('')
+  const weights = ref('')
+  const priceData1 = ref([])
+  const priceData2 = ref([])
   const txt = ref('')
   const titFlag = ref(false)
+  function titFns() {
+    titFlag.value=false
+  }
   let checkList = ref([])
-  const tabsIndex = ref(2)
-  const listIndex = ref(2)
-  const tableData = reactive([{
-    address: '安徽省亳州市谯城区星光大厦1802室',
-    num: '59.8',
-  },{
-    address: '安徽省亳州市谯城区星光大厦1802室',
-    num: '59.8',
-  },{
-    address: '安徽省亳州市谯城区星光大厦1802室',
-    num: '59.8',
-  },{
-    address: '安徽省亳州市谯城区星光大厦1802室',
-    num: '59.8',
-  }])
-  const arrImg = reactive([{
-    name: '十九里镇一部',
-    imgUrl: a,
-  },{
-    name: '太安堂二部',
-    imgUrl: b,
-  },{
-    name: '中通快运十盒站',
-    imgUrl: c,
-  },{
-    name: '壹米滴答康美站',
-    imgUrl: d,
-  },{
-    name: '太安堂二部',
-    imgUrl: e,
-  },{
-    name: '快运十盒站',
-    imgUrl: f,
-  },{
-    name: '康美站康美站康美站',
-    imgUrl: g,
-  },])
+  const tabsIndex = ref(1)
+  const fullscreenLoading = ref(false)
   
+  const tableData = ref([])
+  function rowBtn(e) {
+    console.log(e,444)
+    e.flags = true
+  }
+  function priceCompBtn() {
+    console.log(infos.value,weights.value,7777,checkList.value,)
+    if(!checkList.value.length){
+        ElMessage({
+            message: '请选择开单系统~',
+            type: 'warning',
+            plain: true,
+        })
+        return
+    }
+    if(tabsIndex.value == 1){
+      if(!infos.value){
+        ElMessage({
+            message: '请输入地址~',
+            type: 'warning',
+            plain: true,
+        })
+        return
+    }
+    if(!weights.value){
+        ElMessage({
+            message: '请输入结算重量~',
+            type: 'warning',
+            plain: true,
+        })
+        return
+      }
+      let selectedSites = checkList.value.map(item => {
+        return expreList.onlineExpreList[item].account
+      })
+      fullscreenLoading.value = true
+      service.post('intelligentCompare',{
+        selectedSites,
+        parsedResults:[{
+          info: infos.value,
+          weight: weights.value,
+        }]
+      }).then(res=> {
+        fullscreenLoading.value = false
+        priceData1.value = res.data
+        console.log(res,9999)
+      })
+    }else{
+      if(!tableData.value.length){
+        ElMessage({
+            message: '请输入地址~',
+            type: 'warning',
+            plain: true,
+        })
+        return
+      }
+      let is = 0
+      tableData.value.forEach(item => {
+        console.log(typeof item.num)
+        if(!item.address || item.num == 0){
+          is = 1
+        }
+      })
+      if(is) {
+        ElMessage({
+            message: '地址或重量不能为空哦，请填写后查询',
+            type: 'warning',
+            plain: true,
+        })
+        return
+      }
+      let selectedSites = checkList.value.map(item => {
+        return expreList.onlineExpreList[item].account
+      })
+      let parsedResults = tableData.value.map(item => {
+        return {
+          info: item.address,
+          weight: item.num,
+        }
+      })
+      fullscreenLoading.value = true
+      service.post('intelligentCompare',{
+        selectedSites,
+        parsedResults,
+      }).then(res=> {
+        fullscreenLoading.value = false
+        priceData2.value = res.data
+        console.log(res,9999)
+      })
+    }
+  }
+  function priInput() {
+    if(txt.value!=''){
+      fullscreenLoading.value = true
+      setTimeout(() => {
+        fullscreenLoading.value = false
+      },500)
+    }
+    console.log(txt.value.split('\n'),9999)
+    let adreArr = []
+    if(txt.value){
+      adreArr = txt.value.split('\n').map(item => {
+        return {
+          address: item.replace(getLastNumber(item),''),
+          num: getLastNumber(item),
+          flags: false,
+        }
+      }).filter(item => {
+        return item.address != ''
+      })
+    }
+    console.log(adreArr,2222222)
+    tableData.value = adreArr
+  }
+  function getLastNumber(str) {
+    const match = str.match(/(\d+\.?\d*)$/);
+    return match?match[0]:'' // 如果找到数字，返回整数；否则返回null
+  }
+ 
   function priBtns(e) {
     checkList.value = e
     console.log(checkList.value,66666)
@@ -237,8 +369,14 @@
 </script>
 
 <style scoped lang='scss'>
+.priceCont{
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
   .priceBox{
-    padding-bottom: 26px;
+    padding-bottom: 14px;
+   
     .priceTop{
       height: 641px;
       background: url('@/assets/img/bjBg.png') no-repeat;
@@ -387,11 +525,33 @@
           padding-left: 1px;
           margin-bottom: 11px;
         }
+        .priPlBoxs{
+          width: 710px;
+          padding-right: 90px;
+          box-sizing: border-box;
+          position: relative;
+          .priPlBtn{
+            height: 26px;
+            background: linear-gradient(90deg, #FF5B2E, #FF8969);
+            border-radius: 6px;
+            font-size: 14px;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 82px;
+            cursor: pointer;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+          }
+        }
         .priPlTable{
           padding: 14px 20px;
           background: rgba(255,255,255,0.7);
           box-shadow: 0px 2px 15px 0px rgba(3,0,0,0.08);
           border-radius: 8px;
+          height: 266px;
           border: 1px solid #FFFFFF;
         }
       }
@@ -443,12 +603,15 @@
       box-shadow: 0px 3px 15px 0px rgba(145,145,145,0.15);
       border-radius: 12px;
       position: relative;
-      min-height: 429px;
+
       .plList{
         padding: 8px 0;
         .plItem{
           padding: 0 30px 10px;
           border-bottom: 1px solid #EDEDED;
+          &:last-of-type{
+            border-bottom: none;
+          }
           .plTit{
             height: 56px;
             display: flex;
@@ -600,6 +763,8 @@
         padding: 53px 50px;
         display: flex;
         flex-wrap: wrap;
+        min-height: 450px;
+        box-sizing: border-box;
       }
       .expreDeliverItem{
         display: flex;
@@ -613,6 +778,7 @@
         position: relative;
         padding: 21px 20px 20px 21px;
         align-items: center;
+        position: relative;
         &:nth-of-type(3n){
           margin-right: 0;
         }
@@ -657,12 +823,16 @@
             margin-left: 10px;
           }
         }
+      
         .experImg{
           width: 50px;
           height: 50px;
-          background: #000000;
-          border-radius: 10px;
           margin-right: 10px;
+          img{
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+          }
         }
         .experInfo{
           flex: 1;
@@ -696,6 +866,25 @@
           }
         }
       }
+    }
+  }
+  .expreZbox{
+    width: 100%;        
+    height: 100%;
+    background: rgba(#fff,.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 14px;
+    z-index: 99;
+    img{
+      width: 15px;
+      height: 15px;
+      margin-right: 6px;
     }
   }
 </style>
