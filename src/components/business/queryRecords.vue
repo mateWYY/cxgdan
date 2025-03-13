@@ -43,9 +43,9 @@
             </el-form>
         </div>
         <div class="sxBtns">
-            <div class="sxBtn sxBtn1">查询</div>
-            <div class="sxBtn">重置</div>
-            <div class="sxBtn">导出</div>
+            <div class="sxBtn sxBtn1 hoverOpic">查询</div>
+            <div class="sxBtn hoverOpic">重置</div>
+            <div class="sxBtn hoverOpic">导出</div>
         </div>
     </div>
     <el-table

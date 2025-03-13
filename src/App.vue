@@ -13,7 +13,7 @@ expreData.getList()
   </div>
 </template>
 
-<style scoped>
+<style lang='scss' scoped>
   ::v-deep .el-checkbox .el-checkbox__input.is-checked .el-checkbox__inner,::v-deep .el-checkbox__input.is-indeterminate .el-checkbox__inner{
       border-color: #FF5411; /* 例如，设置为红色 */
       background: #FF5411;
@@ -47,5 +47,10 @@ expreData.getList()
     background-color: rgba(255,84,17, .8);
     border-color: rgba(255,84,17, .8);
     color: #fff ;
+  }
+  ::v-deep .hoverOpic{
+    &:hover{
+      opacity: .8;
+    }
   }
 </style>

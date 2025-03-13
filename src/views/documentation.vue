@@ -7,7 +7,7 @@
         </div>
         
         <div class="comRight">
-            <documDan></documDan>
+            <RouterView></RouterView>
         </div>
       </div>
     </div>
@@ -16,7 +16,6 @@
   <script setup lang="ts">
     import headers from '@/components/headers/headers.vue'
     import side from '@/components/side/side.vue'
-    import documDan from '@/components/business/documDan.vue'
   </script>
   
   <style scoped lang='scss'>

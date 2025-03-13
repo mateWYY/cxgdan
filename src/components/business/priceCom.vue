@@ -2,7 +2,7 @@
   <div class="priceBox">
     <div class="priceTop">
       <div class="priceTit" :class="{'priceTit1':titFlag}" @click="titFlag = !titFlag">
-        <div class="priceTits">
+        <div class="priceTits hoverOpic">
           <img src="@/assets/img/szIcon.png" alt="" class="icon">
           <p>选择开单系统：</p>
           <div class="priImgs">
@@ -27,10 +27,10 @@
         </div>
       </div>
       <div class="priTab">
-        <div class="priTabBtn" @click="tabsIndex=1" :class="{'priTabBtns': tabsIndex==1}">
+        <div class="priTabBtn hoverOpic" @click="tabsIndex=1" :class="{'priTabBtns': tabsIndex==1}">
           单个
         </div>
-        <div class="priTabBtn" @click="tabsIndex=2" :class="{'priTabBtns': tabsIndex==2}">
+        <div class="priTabBtn hoverOpic" @click="tabsIndex=2" :class="{'priTabBtns': tabsIndex==2}">
           批量
         </div>
       </div>
@@ -65,16 +65,15 @@
               maxlength="2000"
               style="width: 710px;"
               rows="5"
-              @blur="priInput"
               placeholder="请输入收件地址和结算重量，如：安徽省亳州市谯城区万达B座写字楼1602室20.5"
               resize="none"
               type="textarea"
             />
-            <div class="priPlBtn">
+            <div class="priPlBtn hoverOpic" @click="priInput">
               智能解析
             </div>
           </div>
-          <div class="priPlTable">
+          <div class="priPlTable" v-if="priFlag">
             <el-table :data="tableData" style="width: 100%;height: 100%;" @row-click="rowBtn">
               <el-table-column prop="address" label="收件地址">
                 <template #default="scope">
@@ -82,7 +81,7 @@
                     {{ scope.row.address }}
                   </div>
                   <div v-else>
-                    <el-input v-model="scope.row.address" />
+                    <el-input v-model="scope.row.address" placeholder="请输入地址（Kg）" />
                   </div>
                 </template>
               </el-table-column>
@@ -92,7 +91,7 @@
                     {{ scope.row.num }}
                   </div>
                   <div v-else>
-                    <el-input v-model="scope.row.num" />
+                    <el-input v-model="scope.row.num" placeholder="请输入重量（Kg）"/>
                   </div>
                 </template>
               </el-table-column>
@@ -100,12 +99,12 @@
           </div>
         </div>
       </div>
-      <div class="priBtn" v-loading.fullscreen.lock="fullscreenLoading" @click="priceCompBtn">
+      <div class="priBtn hoverOpic" v-loading.fullscreen.lock="fullscreenLoading" @click="priceCompBtn">
         比价
         <img src="@/assets/img/btns.png" alt="" class="prizIcon">
       </div>
     </div>
-    <div class="priceBot" :style="{'marginTop': tabsIndex==1?'-330px':'-44px'}">
+    <div class="priceBot" :style="{'marginTop': tabsIndex==1 || !priFlag?'-315px':'-44px'}">
       <div v-if="tabsIndex==1" class="dgBox">
         <template v-if="priceData1.length">
           <div class="expreDeliverItem" v-for="item,index in priceData1[0]?.data" :key="index">
@@ -118,7 +117,7 @@
             </div>
             <div class="experInfo">
               <div class="experInfoTit">
-                <span>{{item.type}}物流</span>
+                <!-- <span>{{item.type}}物流</span> -->
                 <div class="experInfoStatus">
                   {{item.priceType}}
                 </div>
@@ -155,7 +154,7 @@
         </div>
       </div>
       <div v-if="tabsIndex==2">
-        <div class="plList" >
+        <div class="plList" :style="{'height': !priFlag?'calc(100vh - 430px)':''}">
           <template v-if="priceData2.length">
             <div class="plItem" v-for="item,index in priceData2" :key="index">
               <div class="plTit">
@@ -185,14 +184,14 @@
                         {{i.price}}
                       </h2>
                     </div>
-                    <div class="plKyStatus">
+                    <!-- <div class="plKyStatus">
                       {{i.priceType}}
-                    </div>
+                    </div> -->
                   </div>
                   <div class="plKyBot">
                     <img :src="imgTypeFn(i.type)" alt="">
                     <div class="plKyRig">
-                      <h2>{{i.type}}物流</h2>
+                      <span>{{i.priceType}}</span>
                       <p>{{i.name}}</p>
                     </div>
                   </div>
@@ -211,12 +210,6 @@
 
 <script setup lang='ts'>
   import { ref, reactive } from 'vue'
-  import a from '@/assets/img/a.png';
-  import b from '@/assets/img/b.png';
-  import c from '@/assets/img/c.png';
-  import d from '@/assets/img/d.png';
-  import e from '@/assets/img/e.png';
-  import f from '@/assets/img/f.png';
   import { useExpreListStore } from '@/store/store'
   import service  from '@/utils/http.ts';
   import { ElMessage } from 'element-plus'
@@ -227,6 +220,7 @@
   const priceData2 = ref([])
   const txt = ref('')
   const titFlag = ref(false)
+  const priFlag = ref(true)
   function titFns() {
     titFlag.value=false
   }
@@ -234,7 +228,11 @@
   const tabsIndex = ref(1)
   const fullscreenLoading = ref(false)
   
-  const tableData = ref([])
+  const tableData = ref([{
+          info: '',
+          weight: '',
+          flags: true,
+        }])
   function rowBtn(e) {
     console.log(e,444)
     e.flags = true
@@ -282,9 +280,17 @@
         console.log(res,9999)
       })
     }else{
+      if(!priFlag.value){
+        ElMessage({
+            message: '请智能解析地址后，比价哦~',
+            type: 'warning',
+            plain: true,
+        })
+        return
+      }
       if(!tableData.value.length){
         ElMessage({
-            message: '请输入地址~',
+            message: '请智能解析地址后，比价哦~',
             type: 'warning',
             plain: true,
         })
@@ -320,8 +326,11 @@
         parsedResults,
       }).then(res=> {
         fullscreenLoading.value = false
-        priceData2.value = res.data
-        console.log(res,9999)
+        if(res.code ==200){
+          priFlag.value = false
+          tableData.value = []
+          priceData2.value = res.data
+        }
       })
     }
   }
@@ -347,6 +356,7 @@
     }
     console.log(adreArr,2222222)
     tableData.value = adreArr
+    priFlag.value = true
   }
   function getLastNumber(str) {
     const match = str.match(/(\d+\.?\d*)$/);
@@ -376,7 +386,6 @@
 }
   .priceBox{
     padding-bottom: 14px;
-   
     .priceTop{
       height: 641px;
       background: url('@/assets/img/bjBg.png') no-repeat;
@@ -603,9 +612,13 @@
       box-shadow: 0px 3px 15px 0px rgba(145,145,145,0.15);
       border-radius: 12px;
       position: relative;
+      min-height: 450px;
 
       .plList{
         padding: 8px 0;
+        
+        overflow-y: auto;
+        box-sizing: border-box;
         .plItem{
           padding: 0 30px 10px;
           border-bottom: 1px solid #EDEDED;
@@ -703,17 +716,26 @@
                 align-items: center;
                 margin: 12px 0;
                 img{
-                  width: 28px;
-                  height: 28px;
-                  border-radius: 50%;
-                  margin-right: 6px;
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 5px;
+                  margin-right: 10px;
                 }
                 .plKyRig{
                   font-size: 14px;
-                  h2{
+                  flex: 1;
+                  span{
+                    margin-bottom: 6px;
+                    height: 23px;
+                    line-height: 23px;
+                    padding: 0 8px;
+                    background: linear-gradient(90deg, #FF5B2E, #FF8969);
+                    box-shadow: 0px 2px 5px 0px rgba(255,92,47,0.25);
+                    border-radius: 2px;
                     font-weight: bold;
-                    color: #000000;
-                    margin-bottom: 3px;
+                    font-size: 14px;
+                    color: #FFFFFF;
+                    display: inline-block;
                   }
                   p{
                     color: #666666;
@@ -847,12 +869,15 @@
               margin-right: 7px;
             }
             .experInfoStatus{
-              padding: 5px 5px 4px 6px;
-              border-radius: 2px;
-              font-size: 12px;
-              color: #FF5411;
-              background: rgba(#FF5411,.12);
+              padding: 0 8px;
+              font-size: 14px;
+              height: 23px;
+              line-height: 23px;
+              color: #fff;
               margin-right: 5px;
+              background: linear-gradient(90deg, #FF5B2E, #FF8969);
+              box-shadow: 0px 2px 5px 0px rgba(255,92,47,0.25);
+              border-radius: 2px;
             }
             .experInfoStatus1{
               color: #28A745;
@@ -863,6 +888,7 @@
           .experInfoTip{
             font-size: 14px;
             color: #666666;
+            line-height: 1;
           }
         }
       }

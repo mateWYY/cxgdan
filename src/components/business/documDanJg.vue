@@ -1,64 +1,5 @@
-
-
 <template>
     <div class="queryBox" v-loading.fullscreen.lock="fullscreenLoading">
-      <div class="querTit">
-            异常运单数据
-      </div>
-      <div class="querTop">
-        <div class="querItem" :class="logisticsStatus=='应发未发'?'querItem1':''" @click="tabFn('应发未发')">
-            <img src="@/assets/img/zu1.png" class="img1" alt="">
-            <div class="querRig">
-                <p>应发未发</p>
-                <h2>{{ycydData['应发未发']}}</h2>
-            </div>
-        </div>
-        <div class="querItem" :class="logisticsStatus=='分批配载'?'querItem1':''" @click="tabFn('分批配载')">
-            <img src="@/assets/img/zu2.png" class="img2" alt="">
-            <div class="querRig">
-                <div class="querP">
-                    <el-tooltip
-                        class="box-item"
-                        effect="dark"
-                        content="货物分成多个批次进行装载和运输"
-                        placement="bottom"
-                    >
-                        <img src="@/assets/img/tips.png" alt="">
-                    </el-tooltip>
-                    <p>分批配载</p>
-                </div>
-                <h2>{{ycydData['分批配载']}}</h2>
-            </div>
-        </div>
-        <div class="querItem" :class="logisticsStatus=='分拨滞留'?'querItem1':''" @click="tabFn('分拨滞留')">
-            <img src="@/assets/img/zu3.png" class="img3" alt="">
-            <div class="querRig">
-                <p>分拨滞留</p>
-                <h2>{{ycydData['分拨滞留']}}</h2>
-            </div>
-        </div>
-        <div class="querItem" :class="logisticsStatus=='超时未到'?'querItem1':''" @click="tabFn('超时未到')">
-            <img src="@/assets/img/zu4.png" class="img4" alt="">
-            <div class="querRig">
-                <p>超时未到</p>
-                <h2>{{ycydData['超时未到']}}</h2>
-            </div>
-        </div>
-        <div class="querItem" :class="logisticsStatus=='超时未送'?'querItem1':''" @click="tabFn('超时未送')">
-            <img src="@/assets/img/zu5.png" class="img5" alt="">
-            <div class="querRig">
-                <p>超时未送</p>
-                <h2>{{ycydData['超时未送']}}</h2>
-            </div>
-        </div>
-        <div class="querItem" :class="logisticsStatus=='异常签收'?'querItem1':''" @click="tabFn('异常签收')">
-            <img src="@/assets/img/zu6.png" class="img6" alt="">
-            <div class="querRig">
-                <p>异常签收</p>
-                <h2>{{ycydData['异常签收']}}</h2>
-            </div>
-        </div>
-      </div>
       <div class="documCont">
         <div class="documTit">
             实时运单数据
@@ -171,7 +112,7 @@
               </div>
           </div>
         </div>
-        <div class="sxZK" @click="zkFlag=!zkFlag">
+        <div class="sxZK hoverOpic" @click="zkFlag=!zkFlag">
         <img src="@/assets/img/zkIcon.png" alt="">
         {{zkFlag?'收起':'展开'}}筛选
         </div>
@@ -183,7 +124,7 @@
       </div>
       <el-table
           :data="tableData"
-          :style="{'width': '100%','height': 'calc(100% - 385px)'}"
+          :style="{'width': '100%','height': 'calc(100% - 227px)'}"
           ref="multipleTableRef"
       >
           <!-- <el-table-column type="selection" :selectable="selectable" width="55" /> -->
@@ -897,6 +838,8 @@
                 font-size: 18px;
                 color: #222222;
                 margin-bottom: 17px;
+                height: 38px;
+                line-height: 38px;
             }
             .documPot{
                 display: flex;

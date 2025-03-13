@@ -43,11 +43,11 @@
       })
     }else if(val==2){
       router.push({
-        path: '/documentation',
+        path: '/documentation/documDan',
       })
     }else if(val == 3){
       router.push({
-        path: '/priceCparison',
+        path: '/priceCparison/priceCom',
       })
     }
     

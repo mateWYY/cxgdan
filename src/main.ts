@@ -17,10 +17,11 @@ import VueClickAway from "vue3-click-away";     // 点击其他地方关闭模�
 
 import App from './App.vue'
 import router from './router'
+import moment from 'moment';
 
 const app = createApp(App)
-
 app.use(VueClickAway) 
+
 
 app.config.globalProperties.imgTypeFn = (val:string) => {
     if(!val){
@@ -45,6 +46,7 @@ app.config.globalProperties.imgTypeFn = (val:string) => {
         return f
     }
 }
+app.config.globalProperties.moment = moment;
 
 app.use(ElementPlus, {
     locale: zhCn,

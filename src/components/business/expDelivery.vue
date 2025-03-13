@@ -45,7 +45,7 @@
                 />
                 <el-popover placement="bottom" :visible="visible" :width="400" trigger="click">
                     <template #reference>
-                        <div class="rgBox" @click="visible=!visible" :class="{'rgBox1': val}">
+                        <div class="rgBox hoverOpic" @click="visible=!visible" :class="{'rgBox1': val}">
                             <img src="@/assets/img/wRgicon.png" v-show="!val" alt="">
                             <img src="@/assets/img/yRgicon.png" v-show="val" alt="">
                             <span>人工核实</span>
@@ -75,7 +75,7 @@
                     </template>
                 </el-popover>
             </div>
-            <div class="expPiBtn" v-loading.fullscreen.lock="fullscreenLoading" @click="searBtn" :loading="btnFlag">
+            <div class="expPiBtn hoverOpic" v-loading.fullscreen.lock="fullscreenLoading" @click="searBtn" :loading="btnFlag">
                 <span>立即查询</span>
                 <img src="@/assets/img/ssIcon.png" alt="">
             </div>
@@ -91,7 +91,7 @@
             <p>共查询到<span>{{tabsData.length}}</span>条信息</p>
             <div class="expBtns">
                 筛选：
-                <div class="expBtn" :class="{'expBtn1': item.flag}" @click="tabFn(item)" v-for="item,index in tabSxs" :key="index">{{item.name}}</div>
+                <div class="expBtn hoverOpic" :class="{'expBtn1': item.flag}" @click="tabFn(item)" v-for="item,index in tabSxs" :key="index">{{item.name}}</div>
             </div>
         </div>
         <el-table

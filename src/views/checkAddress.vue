@@ -16,8 +16,6 @@
     import headers from '@/components/headers/headers.vue'
     import side from '@/components/side/side.vue'
     import { RouterView } from 'vue-router'
-    import expDelivery from '@/components/business/expDelivery.vue'
-    import queryRecords from '@/components/business/queryRecords.vue'
   </script>
   
   <style scoped lang='scss'>

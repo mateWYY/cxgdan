@@ -1,12 +1,12 @@
 <template>
   <div class="monitBox" :class="!qjFlag?'monitBox1':''">
-    <div class="monitIcons" @click="iconFn">
+    <div class="monitIcons hoverOpic" @click="iconFn">
         <div class="monIcon">
             <img src="@/assets/img/jk_icon.png" alt="">
         </div>
         <div class="monIconDian" v-show="xxFlag"></div>
     </div>
-    <el-button @click="adds">add</el-button>
+    <!-- <el-button @click="adds">add</el-button> -->
     <div class="monCont" :class="qjFlag?'monCont1':''">
             <div class="monContTit">
                 <div class="monLef">
@@ -18,36 +18,89 @@
                     <span>收起</span>
                 </div>
             </div>
-            <div class="monContList">
-                <el-scrollbar height="200px">
-                    <div v-for="item in count" :key="item" class="monContItem">
+            <div class="monContList" ref="scrollableDiv">
+                <div class="scrollableDiv">
+                    <div v-for="(item,index) in count" :key="index" class="monContItem">
                         <div class="monContItemLef">
                             <img src="@/assets/img/jk_y.png" alt="">
-                            <span>十九里镇一部</span>
-                            <p>正在启动数据同步</p>
+                            <span>{{item.name}}</span>
+                            <p :class="item.syncStatus.includes('成功') || item.syncStatus.includes('完成')?'p1':item.syncStatus.includes('失败')?'p2':''">{{item.syncStatus}}</p>
                         </div>
                         <div class="monContItemRig">
-                            3/21 15:36
+                            {{moment(item.lastSyncDate).format('MM/DD HH:MM')}}
                         </div>
                     </div>
-                </el-scrollbar>
+                </div>
             </div>
         </div>
   </div>
 </template>
 
 <script setup lang='ts'>
-    import { ref } from 'vue'
+    import { ref, nextTick,onMounted, onUnmounted } from 'vue'
 
-    const count = ref(8)
     const qjFlag = ref(false)
     const xxFlag = ref(false)
-    function adds() {
-        count.value++
-        if(qjFlag.value == false) {
-            xxFlag.value = true
-        }
+   
+    // 通信链接
+    const ws = ref(null);
+    const url = 'ws://10.250.251.192:8888/my-websocket';
+
+    onMounted(() => {
+        connectWebSocket()
+    });
+    console.log()
+    function connectWebSocket() {
+        ws.value = new WebSocket(url);
+        ws.value.onopen = () => {
+            console.log('成功连接');
+        };
+        ws.value.onmessage = (event) => {
+            const data = event.data;
+            if(qjFlag.value == false) {
+                xxFlag.value = true
+            }
+            try {
+                let item = JSON.parse(data)
+                count.value.push(item)
+            }catch(err) {
+                console.log(err)
+            }
+            nextTick().then(() => {
+                scrollToBottom()
+            })
+            console.log(data)
+            // ws.value.push(data); // 假设服务器发送的是JSON格式的数据
+        };
+        ws.value.onerror = (error) => {
+            console.log('Error:', error);
+            // reconnectWebSocket()
+        };
+        ws.value.onclose = () => {
+            console.log('已断开连接');
+            reconnectWebSocket()
+        };
     }
+    const RECONNECT_INTERVAL = 5000; // 重连间隔时间，5秒
+    let isReconnecting = false;
+    function reconnectWebSocket() {
+        isReconnecting = true; // 设置重连中状态
+        setTimeout(() => {
+            connectWebSocket(); // 延时后重新尝试连接
+        }, RECONNECT_INTERVAL);
+    }
+    onUnmounted(() => {
+        if (ws.value) {
+            ws.value.close(); // 关闭WebSocket连接
+        }
+    });
+    const count = ref([])
+    const scrollableDiv = ref(null);
+    const scrollToBottom = () => {
+        if (scrollableDiv.value) {
+            scrollableDiv.value.scrollTop = scrollableDiv.value.scrollHeight;
+        }
+    };
     function iconFn() {
         qjFlag.value = !qjFlag.value
         if(qjFlag.value){
@@ -131,6 +184,8 @@
                 }
             }
             .monContList{
+                overflow-y: auto;
+                height: 200px;
                 .monContItem{
                     display: flex;
                     align-items: center;
@@ -167,6 +222,12 @@
                                 top: 50%;
                                 transform: translateY(-50%);
                             }
+                        }
+                        .p1{
+                            color: #28A745;
+                        }
+                        .p2{
+                            color: #DC3545;
                         }
                     }
                 }

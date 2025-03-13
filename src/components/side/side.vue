@@ -38,6 +38,14 @@
       </div>
     </template>
   </el-dialog>
+  <div class="sideType" v-if="props.queryType=='pri'">
+    <div class="sideTypeItem" @click="priTabsFn(0)" :class="{'sideTypeItem1':tabNum==0}">
+      智能比价
+    </div>
+    <div class="sideTypeItem" @click="priTabsFn(1)" :class="{'sideTypeItem1':tabNum==1}">
+      比价记录
+    </div>
+  </div>
   <div class="sideType" v-if="props.queryType=='exp'">
     <div class="sideTypeItem" @click="tabsFn(0)" :class="{'sideTypeItem1':tabNum==0}">
       直接查询
@@ -50,16 +58,19 @@
     </div>
   </div>
   <div class="sideType" v-if="props.queryType=='docum'">
-    <div class="sideTypeItem" @click="tabNum=0" :class="{'sideTypeItem1':tabNum==0}">
+    <div class="sideTypeItem" @click="documTabsFn(0)" :class="{'sideTypeItem1':tabNum==0}">
       出港跟单
     </div>
-    <div class="sideTypeItem" @click="tabNum=1" :class="{'sideTypeItem1':tabNum==1}">
+    <div class="sideTypeItem" @click="documTabsFn(1)" :class="{'sideTypeItem1':tabNum==1}">
+      进港跟单
+    </div>
+    <div class="sideTypeItem" @click="documTabsFn(2)" :class="{'sideTypeItem1':tabNum==2}">
       跟单配置
     </div>
-    <div class="sideTypeItem" @click="tabNum=2" :class="{'sideTypeItem1':tabNum==2}">
+    <div class="sideTypeItem" @click="documTabsFn(3)" :class="{'sideTypeItem1':tabNum==3}">
       客户自助查询
     </div>
-    <div class="sideTypeItem" @click="tabNum=3" :class="{'sideTypeItem1':tabNum==3}">
+    <div class="sideTypeItem" @click="documTabsFn(4)" :class="{'sideTypeItem1':tabNum==4}">
       物流加速
     </div>
   </div>
@@ -83,7 +94,7 @@
         </div>
       </div>
     </div>
-    <div class="sideAddBtn" @click="addzdFn" >
+    <div class="sideAddBtn hoverOpic" @click="addzdFn" >
       <img src="@/assets/img/addIcon.png" alt="">
       添加更多站点
     </div>
@@ -203,6 +214,32 @@
       loginTxt.value=true
       ruleForm.type = item.logisticsType
       centerDialogVisible.value = true
+    }
+  }
+  function priTabsFn(val: number) {
+    tabNum.value = val
+    if(val == 0) {
+      router.push({
+          path: '/priceCparison/priceCom'
+      })
+    }
+    if(val == 1) {
+      router.push({
+          path: '/priceCparison/priceComJl'
+      })
+    }
+  }
+  function documTabsFn(val: number) {
+    tabNum.value = val
+    if(val == 0) {
+      router.push({
+          path: '/documentation/documDan'
+      })
+    }
+    if(val == 1) {
+      router.push({
+          path: '/documentation/documDanJg'
+      })
     }
   }
   function tabsFn(val: number) {

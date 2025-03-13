@@ -3,10 +3,10 @@
     <headers></headers>
     <div class="comBox">
       <div class="comLeft">
-        <side></side>
+        <side queryType="pri"></side>
       </div>
       <div class="comRight">
-        <priceCom></priceCom>
+        <RouterView></RouterView>
       </div>
     </div>
   </div>
@@ -15,7 +15,6 @@
 <script setup lang="ts">
   import headers from '@/components/headers/headers.vue'
   import side from '@/components/side/side.vue'
-  import priceCom from '@/components/business/priceCom.vue'
 </script>
 
 <style scoped lang='scss'>
